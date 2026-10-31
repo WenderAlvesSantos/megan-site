@@ -1,11 +1,12 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node'
 import { assinar } from '../lib/assinatura.js'
 import { config } from '../lib/config.js'
-import { avaliarLicenca } from '../lib/licenca.js'
-import { colecaoUsuarios } from '../lib/mongo.js'
+import { colecaoUsuarios, registrarEvento } from '../lib/mongo.js'
+import { responderLicenca } from '../lib/pedidoLicenca.js'
 import { emailValido, normalizarEmail } from '../lib/validacao.js'
 
 const NONCE_RE = /^[a-f0-9]{16,64}$/
+const MAQUINA_RE = /^[a-f0-9]{32,64}$/
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method !== 'POST') {
@@ -15,24 +16,31 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const corpo = (req.body ?? {}) as Record<string, unknown>
   const email = normalizarEmail(corpo.email)
   const nonce = String(corpo.nonce ?? '')
-  if (!emailValido(email) || !NONCE_RE.test(nonce)) {
-    res.status(400).json({ erro: 'Requisição inválida.' })
+  const maquina = String(corpo.maquina ?? '').toLowerCase()
+  if (!emailValido(email) || !NONCE_RE.test(nonce) || !MAQUINA_RE.test(maquina)) {
+    res.status(400).json({ erro: 'Requisição inválida. Atualize a Megan para a versão mais recente.' })
     return
   }
   try {
     const usuarios = await colecaoUsuarios()
-    const usuario = await usuarios.findOne({ email })
-    const agora = new Date()
-    const resultado = avaliarLicenca(usuario, agora, config.contato())
-    res.status(200).json(
-      assinar({
-        ...resultado,
-        email,
-        nonce,
-        app: String(corpo.app ?? ''),
-        emitidoEm: agora.toISOString(),
-      }),
-    )
+    const resultado = await responderLicenca(email, corpo.chave, maquina, {
+      agora: () => new Date(),
+      contato: config.contato(),
+      buscar: (e) => usuarios.findOne({ email: e }),
+      vincular: async (e, hash, m, agora) => {
+        const r = await usuarios.updateOne(
+          { email: e, licenseKeyHash: hash, machineId: { $exists: false } },
+          { $set: { machineId: m, machineBoundAt: agora } },
+        )
+        return r.modifiedCount === 1
+      },
+      marcarConsulta: async (e, agora) => {
+        await usuarios.updateOne({ email: e }, { $set: { lastCheckAt: agora } })
+      },
+      evento: registrarEvento,
+    })
+    const emitidoEm = new Date().toISOString()
+    res.status(200).json(assinar({ ...resultado, email, nonce, maquina, app: String(corpo.app ?? ''), emitidoEm }))
   } catch (e) {
     console.error('[licenca] erro', e)
     res.status(503).json({ erro: 'Servidor de licença indisponível. Tente de novo em instantes.' })

@@ -1,14 +1,20 @@
-import { StrictMode } from 'react'
+import { StrictMode, Suspense, lazy } from 'react'
 import { createRoot } from 'react-dom/client'
 import App from './App'
 import PaginaCompra from './compra/PaginaCompra'
 import './styles.css'
 
-// /comprar só por link direto: não há link para ela na landing page
-const Pagina = window.location.pathname.replace(/\/+$/, '') === '/comprar' ? PaginaCompra : App
+const PaginaAdmin = lazy(() => import('./admin/PaginaAdmin'))
 
-createRoot(document.getElementById('root')!).render(
-  <StrictMode>
-    <Pagina />
-  </StrictMode>,
-)
+// /comprar e /admin só por link direto: não há link para elas na landing page
+const ROTAS: Record<string, () => JSX.Element> = {
+  '/comprar': () => <PaginaCompra />,
+  '/admin': () => (
+    <Suspense fallback={null}>
+      <PaginaAdmin />
+    </Suspense>
+  ),
+}
+const rota = ROTAS[window.location.pathname.replace(/\/+$/, '')]
+
+createRoot(document.getElementById('root')!).render(<StrictMode>{rota ? rota() : <App />}</StrictMode>)

@@ -3,7 +3,7 @@ import { processarCadastro } from '../lib/cadastro.js'
 import { config } from '../lib/config.js'
 import { enviarEmailTeste } from '../lib/email.js'
 import { criarContaGerenciador } from '../lib/gerenciador.js'
-import { colecaoUsuarios } from '../lib/mongo.js'
+import { colecaoUsuarios, registrarEvento } from '../lib/mongo.js'
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method !== 'POST') {
@@ -17,6 +17,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       inserir: async (doc) => {
         try {
           await usuarios.insertOne(doc)
+          await registrarEvento({ email: doc.email, tipo: 'chave_gerada', detalhe: 'teste' })
           return true
         } catch (e) {
           if ((e as { code?: number }).code === 11000) return false

@@ -5,7 +5,8 @@ import { enviarEmailCompra } from './emailCompra.js'
 import { criarContaGerenciador } from './gerenciador.js'
 import type { DepsLiberacao } from './liberacao.js'
 import { criarPreferencia, pagamentosDaCompra } from './mercadopago.js'
-import { colecaoCompras, colecaoUsuarios } from './mongo.js'
+import { camposNovaChave } from './ativacao.js'
+import { colecaoCompras, colecaoUsuarios, registrarEvento } from './mongo.js'
 import type { DepsReconciliacao } from './reconciliacao.js'
 
 export async function depsCheckoutReais(): Promise<DepsCheckout> {
@@ -43,16 +44,24 @@ export async function depsLiberacaoReais(): Promise<DepsLiberacao> {
       await compras.updateOne({ _id: id }, { $set: { licencaAte } })
     },
     buscarUsuario: (email) => usuarios.findOne({ email }),
-    ativarAnual: async (c, licencaAte) => {
+    ativarAnual: async (c, licencaAte, chave) => {
       const agora = new Date()
       await usuarios.updateOne(
         { email: c.email },
         {
-          $set: { plan: 'anual', licenseEndsAt: licencaAte, contract: 0, active: true, updatedAt: agora },
+          $set: {
+            plan: 'anual',
+            licenseEndsAt: licencaAte,
+            contract: 0,
+            active: true,
+            updatedAt: agora,
+            ...(chave ? camposNovaChave(chave, agora) : {}),
+          },
           $setOnInsert: { name: c.name, email: c.email, phone: c.phone, createdAt: agora, source: 'compra' },
         },
         { upsert: true },
       )
+      if (chave) await registrarEvento({ email: c.email, tipo: 'chave_gerada', detalhe: 'compra' })
     },
     criarContaGerenciador,
     enviarEmail: enviarEmailCompra,

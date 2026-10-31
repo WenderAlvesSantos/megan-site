@@ -533,6 +533,104 @@ input:focus {
   background: linear-gradient(135deg, var(--verde), var(--ciano));
 }
 
+.admin .container {
+  max-width: 980px;
+}
+
+.admin-login {
+  max-width: 380px;
+  margin: 0 auto;
+}
+
+.admin-busca {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 20px;
+}
+
+.admin-busca input {
+  flex: 1 1 260px;
+  padding: 12px 14px;
+  border-radius: 10px;
+  border: 1px solid var(--borda);
+  background: var(--cartao);
+  color: var(--texto);
+}
+
+.admin-lista {
+  display: grid;
+  gap: 16px;
+}
+
+.admin-cliente {
+  padding: 20px;
+  border-radius: 14px;
+  background: var(--cartao);
+  border: 1px solid var(--borda);
+}
+
+.admin-cliente header {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.admin-cliente h3 {
+  margin: 0 0 4px;
+}
+
+.admin-cliente header p {
+  margin: 0;
+  color: var(--suave);
+}
+
+.admin-cliente dl {
+  display: grid;
+  grid-template-columns: 130px 1fr;
+  gap: 6px 12px;
+  margin: 16px 0;
+}
+
+.admin-cliente dt {
+  color: var(--suave);
+}
+
+.admin-cliente dd {
+  margin: 0;
+}
+
+.admin-eventos {
+  margin: 0 0 16px;
+  padding-left: 18px;
+  color: var(--suave);
+  font-size: 0.9rem;
+}
+
+.admin-resultado {
+  margin-top: 12px;
+  font-family: Consolas, monospace;
+  word-break: break-all;
+}
+
+.tag {
+  align-self: flex-start;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+
+.tag.ok {
+  background: rgba(16, 185, 129, 0.15);
+  color: var(--verde);
+}
+
+.tag.off {
+  background: rgba(239, 68, 68, 0.15);
+  color: #f87171;
+}
+
 .icone-ok.carregando {
   animation: pulsar 1.2s ease-in-out infinite;
 }

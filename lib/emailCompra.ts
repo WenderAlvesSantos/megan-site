@@ -1,5 +1,5 @@
 import { obrigatoria } from './config.js'
-import { blocoGerenciador, enviarEmail, escapar, formatarVencimento } from './email.js'
+import { blocoChave, blocoGerenciador, enviarEmail, escapar, formatarVencimento } from './email.js'
 import type { ContaGerenciador } from './gerenciador.js'
 
 export interface EmailCompra {
@@ -7,12 +7,15 @@ export interface EmailCompra {
   nome: string
   licencaAte: Date
   conta?: ContaGerenciador
+  /** chave nova (cliente sem chave); null = cliente já tem chave e continua com ela */
+  chave: string | null
 }
 
-export function montarEmailCompra({ para, nome, licencaAte, conta }: EmailCompra, link: string) {
+export function montarEmailCompra({ para, nome, licencaAte, conta, chave }: EmailCompra, link: string) {
   const primeiro = nome.split(' ')[0]
   const ate = formatarVencimento(licencaAte)
   const gerenciador = blocoGerenciador(conta, para)
+  const ativacao = blocoChave(chave)
   const texto = [
     `Olá, ${primeiro}!`,
     '',
@@ -21,9 +24,11 @@ export function montarEmailCompra({ para, nome, licencaAte, conta }: EmailCompra
     '',
     `1. Baixe o MeganN18.zip: ${link}`,
     '2. Extraia a pasta inteira (não abra o .exe de dentro do .zip).',
-    `3. Abra o MeganN18.exe e entre com este e-mail: ${para}`,
+    `3. Abra o MeganN18.exe e entre com este e-mail (${para}) e a chave de ativação.`,
     '',
     'Se você já usa a Megan, basta abrir o programa: a licença é atualizada sozinha.',
+    '',
+    ...ativacao.texto,
     '',
     ...gerenciador.texto,
     '',
@@ -40,10 +45,11 @@ export function montarEmailCompra({ para, nome, licencaAte, conta }: EmailCompra
     </p>
     <ol>
       <li>Extraia a pasta inteira (não abra o .exe de dentro do .zip).</li>
-      <li>Abra o <b>MeganN18.exe</b> e entre com este e-mail: <b>${escapar(para)}</b>.</li>
+      <li>Abra o <b>MeganN18.exe</b> e entre com este e-mail (<b>${escapar(para)}</b>) e a chave de ativação.</li>
       <li>Deixe o MetaTrader 5 aberto, logado na sua corretora e com Algo Trading ligado.</li>
     </ol>
     <p>Se você já usa a Megan, basta abrir o programa: a licença é atualizada sozinha.</p>
+    ${ativacao.html}
     ${gerenciador.html}
     <p style="color:#6b7280;font-size:12px">Operações em renda variável envolvem risco. Resultados passados não garantem resultados futuros.</p>
   </div>`

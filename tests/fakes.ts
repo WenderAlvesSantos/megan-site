@@ -1,3 +1,4 @@
+import type { NovaChave } from '../lib/chave.js'
 import type { EmailCompra } from '../lib/emailCompra.js'
 import type { DepsLiberacao } from '../lib/liberacao.js'
 import type { PagamentoMP } from '../lib/mercadopago.js'
@@ -28,6 +29,7 @@ export function banco(opts: OpcoesBanco = {}) {
     plano: 'anual', valor: 1599, status: 'pendente', criadaEm: AGORA,
   }
   const ativacoes: Date[] = []
+  const chaves: (NovaChave | null)[] = []
   const emails: EmailCompra[] = []
   const d: DepsLiberacao = {
     agora: () => AGORA,
@@ -42,9 +44,10 @@ export function banco(opts: OpcoesBanco = {}) {
     },
     registrarValidade: async (_id, ate) => { compra.licencaAte = ate },
     buscarUsuario: async () => opts.usuario ?? null,
-    ativarAnual: async (_c, ate) => {
+    ativarAnual: async (_c, ate, chave) => {
       if (opts.falhaAtivar) throw new Error('mongo fora')
       ativacoes.push(ate)
+      chaves.push(chave)
     },
     criarContaGerenciador: async () => {
       if (opts.falhaGerenciador) throw new Error('gerenciador fora')
@@ -53,5 +56,5 @@ export function banco(opts: OpcoesBanco = {}) {
     enviarEmail: async (e) => { emails.push(e) },
     pagamentosDaCompra: async () => opts.pagamentos ?? [],
   }
-  return { d, compra, ativacoes, emails }
+  return { d, compra, ativacoes, chaves, emails }
 }

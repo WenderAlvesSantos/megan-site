@@ -1,3 +1,5 @@
+import { camposNovaChave } from './ativacao.js'
+import { gerarChave } from './chave.js'
 import { fimDoTeste } from './diasUteis.js'
 import type { EmailTeste } from './email.js'
 import type { ContaGerenciador } from './gerenciador.js'
@@ -45,7 +47,9 @@ export async function processarCadastro(corpo: unknown, deps: DepsCadastro): Pro
 
   const agora = deps.agora()
   const venceEm = fimDoTeste(agora, deps.diasTeste)
+  const nova = gerarChave()
   const gravou = await deps.inserir({
+    ...camposNovaChave(nova, agora),
     name: nome,
     email,
     phone: telefone,
@@ -62,7 +66,7 @@ export async function processarCadastro(corpo: unknown, deps: DepsCadastro): Pro
   const conta = await contaNoGerenciador(email, deps)
   let emailEnviado = true
   try {
-    await deps.enviarEmail({ para: email, nome, venceEm, conta })
+    await deps.enviarEmail({ para: email, nome, venceEm, conta, chave: nova.chave })
   } catch (e) {
     emailEnviado = false
     console.error('[teste] falha ao enviar e-mail', email, e)
@@ -71,7 +75,7 @@ export async function processarCadastro(corpo: unknown, deps: DepsCadastro): Pro
     status: 'criado',
     mensagem: emailEnviado
       ? `Enviamos o link de download para ${email}.`
-      : 'Seu teste foi liberado, mas o e-mail não pôde ser enviado agora. Fale com o suporte para receber o link.',
+      : 'Seu teste foi liberado, mas o e-mail não pôde ser enviado agora. Fale com o suporte para receber o link e a chave de ativação.',
     venceEm: venceEm.toISOString(),
     emailEnviado,
     contaGerenciador: conta !== undefined,

@@ -1,3 +1,4 @@
+import { gerarChave, type NovaChave } from './chave.js'
 import { mascararEmail, pagamentoConfirma } from './compra.js'
 import type { EmailCompra } from './emailCompra.js'
 import type { ContaGerenciador } from './gerenciador.js'
@@ -13,8 +14,8 @@ export interface DepsLiberacao {
   desfazerReserva: (compraId: string) => Promise<void>
   registrarValidade: (compraId: string, licencaAte: Date) => Promise<void>
   buscarUsuario: (email: string) => Promise<UsuarioMegan | null>
-  /** Cria a conta se não existir; plano anual, sem limite de contratos. */
-  ativarAnual: (compra: CompraMegan, licencaAte: Date) => Promise<void>
+  /** Cria a conta se não existir; plano anual, sem limite de contratos; grava a chave nova se houver. */
+  ativarAnual: (compra: CompraMegan, licencaAte: Date, chave: NovaChave | null) => Promise<void>
   criarContaGerenciador: (email: string) => Promise<ContaGerenciador>
   enviarEmail: (dados: EmailCompra) => Promise<void>
   pagamentosDaCompra: (compraId: string) => Promise<PagamentoMP[]>
@@ -35,6 +36,7 @@ export async function liberarCompra(p: PagamentoMP, deps: DepsLiberacao): Promis
   if (!(await deps.reservar(compra._id, String(p.id), agora))) return { status: 'ja_liberada' }
 
   let licencaAte: Date
+  let chave: NovaChave | null
   try {
     const usuario = await deps.buscarUsuario(compra.email)
     if (ehLicencaSemVencimento(usuario)) {
@@ -42,24 +44,26 @@ export async function liberarCompra(p: PagamentoMP, deps: DepsLiberacao): Promis
       return { status: 'sem_vencimento' }
     }
     licencaAte = novaValidadeAnual(usuario, agora)
-    await deps.ativarAnual(compra, licencaAte)
+    // Quem já tem chave continua com ela (e com a máquina já vinculada)
+    chave = usuario?.licenseKeyHash ? null : gerarChave()
+    await deps.ativarAnual(compra, licencaAte, chave)
   } catch (e) {
     await deps.desfazerReserva(compra._id)
     throw e
   }
-  await avisarCliente(compra, licencaAte, deps)
+  await avisarCliente(compra, licencaAte, chave, deps)
   return { status: 'liberada', licencaAte }
 }
 
 // Licença já liberada: daqui em diante nenhuma falha pode desfazer a reserva (somaria outro ano).
-async function avisarCliente(compra: CompraMegan, licencaAte: Date, deps: DepsLiberacao) {
+async function avisarCliente(compra: CompraMegan, licencaAte: Date, chave: NovaChave | null, deps: DepsLiberacao) {
   await deps.registrarValidade(compra._id, licencaAte).catch((e) => console.error('[compra] validade', compra._id, e))
   const conta = await deps.criarContaGerenciador(compra.email).catch((e) => {
     console.error('[compra] gerenciador', compra.email, e)
     return undefined
   })
   await deps
-    .enviarEmail({ para: compra.email, nome: compra.name, licencaAte, conta })
+    .enviarEmail({ para: compra.email, nome: compra.name, licencaAte, conta, chave: chave?.chave ?? null })
     .catch((e) => console.error('[compra] e-mail', compra.email, e))
 }
 

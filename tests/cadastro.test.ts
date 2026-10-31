@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { processarCadastro, type DepsCadastro } from '../lib/cadastro.js'
+import { hashChave } from '../lib/chave.js'
 import { montarEmailTeste, type EmailTeste } from '../lib/email.js'
 import type { UsuarioMegan } from '../lib/mongo.js'
 
@@ -33,6 +34,7 @@ function deps(existente: UsuarioMegan | null = null, falhaEmail = false, duplica
 }
 
 const valido = { nome: '  Maria   da Silva ', email: ' Maria@Exemplo.com ', telefone: '(11) 91234-5678', aceite: true, website: '' }
+const CHAVE = 'MEGN-ABCD-EFGH-JKMN-PQRS'
 
 describe('processarCadastro', () => {
   it('cria usuário trial, conta no gerenciador e envia o e-mail com a senha', async () => {
@@ -49,6 +51,17 @@ describe('processarCadastro', () => {
     expect(u).toMatchObject({ name: 'Maria da Silva', email: 'maria@exemplo.com', phone: '11912345678', active: true, contract: 1, plan: 'trial', source: 'site' })
     expect(u.trialEndsAt?.toISOString()).toBe('2026-11-12T21:30:00.000Z')
     expect(r.venceEm).toBe('2026-11-12T21:30:00.000Z')
+  })
+
+  it('gera a chave de ativação: o e-mail leva a chave e o banco só o hash', async () => {
+    const { d, inseridos, emails } = deps()
+    await processarCadastro(valido, d)
+    const chave = emails[0].chave
+    expect(chave).toMatch(/^MEGN-[0-9A-HJKMNP-TV-Z]{4}(-[0-9A-HJKMNP-TV-Z]{4}){3}$/)
+    expect(inseridos[0].licenseKeyHash).toBe(hashChave(chave))
+    expect(inseridos[0].licenseKeyHint).toBe(chave.slice(-4))
+    expect(JSON.stringify(inseridos[0])).not.toContain(chave)
+    expect(inseridos[0].machineId).toBeUndefined()
   })
 
   it('não renova teste de e-mail já cadastrado nem mexe no gerenciador', async () => {
@@ -102,8 +115,14 @@ describe('processarCadastro', () => {
 })
 
 describe('montarEmailTeste', () => {
+  it('leva a chave de ativação e a regra de um computador', () => {
+    const m = montarEmailTeste({ para: 'a@b.com', nome: 'Ana', venceEm: new Date(), chave: CHAVE }, 'https://drive/x')
+    for (const corpo of [m.texto, m.html]) expect(corpo).toContain(CHAVE)
+    expect(m.texto).toContain('vinculada a esse computador')
+  })
+
   it('leva link, vencimento e escapa o nome', () => {
-    const m = montarEmailTeste({ para: 'a@b.com', nome: '<b>Ana</b> Lima', venceEm: new Date('2026-11-19T21:30:00Z') }, 'https://drive/x')
+    const m = montarEmailTeste({ para: 'a@b.com', nome: '<b>Ana</b> Lima', venceEm: new Date('2026-11-19T21:30:00Z'), chave: CHAVE }, 'https://drive/x')
     expect(m.texto).toContain('https://drive/x')
     expect(m.texto).toContain('19/11/2026')
     expect(m.html).toContain('&lt;b&gt;Ana&lt;/b&gt;')
@@ -112,7 +131,7 @@ describe('montarEmailTeste', () => {
 
   it('leva link, login e senha do gerenciador', () => {
     const conta = { url: URL_GERENCIADOR, senha: 'Ab3dEf7h' }
-    const m = montarEmailTeste({ para: 'a@b.com', nome: 'Ana', venceEm: new Date('2026-11-19T21:30:00Z'), conta }, 'https://drive/x')
+    const m = montarEmailTeste({ para: 'a@b.com', nome: 'Ana', venceEm: new Date('2026-11-19T21:30:00Z'), conta, chave: CHAVE }, 'https://drive/x')
     for (const corpo of [m.texto, m.html]) {
       expect(corpo).toContain(URL_GERENCIADOR)
       expect(corpo).toContain('Ab3dEf7h')
@@ -122,13 +141,13 @@ describe('montarEmailTeste', () => {
 
   it('conta já existente no gerenciador: sem senha nova', () => {
     const conta = { url: URL_GERENCIADOR, senha: null }
-    const m = montarEmailTeste({ para: 'a@b.com', nome: 'Ana', venceEm: new Date(), conta }, 'https://drive/x')
+    const m = montarEmailTeste({ para: 'a@b.com', nome: 'Ana', venceEm: new Date(), conta, chave: CHAVE }, 'https://drive/x')
     expect(m.texto).toContain('a senha que você já usa')
     expect(m.texto).not.toContain('Senha:')
   })
 
   it('sem conta no gerenciador avisa que o suporte envia o acesso', () => {
-    const m = montarEmailTeste({ para: 'a@b.com', nome: 'Ana', venceEm: new Date() }, 'https://drive/x')
+    const m = montarEmailTeste({ para: 'a@b.com', nome: 'Ana', venceEm: new Date(), chave: CHAVE }, 'https://drive/x')
     expect(m.texto).toContain('enviado pelo suporte')
   })
 })

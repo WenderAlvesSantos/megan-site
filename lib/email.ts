@@ -8,6 +8,7 @@ export interface EmailTeste {
   venceEm: Date
   /** ausente quando a conta no gerenciador não pôde ser criada */
   conta?: ContaGerenciador
+  chave: string
 }
 
 export function formatarVencimento(d: Date): string {
@@ -24,6 +25,22 @@ export function formatarVencimento(d: Date): string {
 export function escapar(texto: string): string {
   const mapa: Record<string, string> = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }
   return texto.replace(/[&<>"']/g, (c) => mapa[c])
+}
+
+/** `null` = cliente já tem chave (ex.: renovação): só lembra de usar a mesma. */
+export function blocoChave(chave: string | null) {
+  const titulo = 'Chave de ativação da Megan'
+  if (chave === null) {
+    const aviso = 'Continue usando a mesma chave de ativação que você já recebeu.'
+    return { texto: [titulo, aviso], html: `<h3>${titulo}</h3><p>${aviso}</p>` }
+  }
+  const regra = 'Na primeira vez que abrir a Megan, informe seu e-mail e esta chave. Ela fica vinculada a esse computador; para trocar de computador, fale com o suporte.'
+  return {
+    texto: [titulo, `Chave: ${chave}`, regra],
+    html: `<h3>${titulo}</h3>
+    <p style="font-family:Consolas,monospace;font-size:20px;font-weight:bold;letter-spacing:1px;background:#f1f5f9;padding:12px 16px;border-radius:8px;display:inline-block">${escapar(chave)}</p>
+    <p>${regra}</p>`,
+  }
 }
 
 export function blocoGerenciador(conta: ContaGerenciador | undefined, para: string) {
@@ -48,10 +65,11 @@ export function blocoGerenciador(conta: ContaGerenciador | undefined, para: stri
   }
 }
 
-export function montarEmailTeste({ nome, venceEm, para, conta }: EmailTeste, link: string) {
+export function montarEmailTeste({ nome, venceEm, para, conta, chave }: EmailTeste, link: string) {
   const primeiro = nome.split(' ')[0]
   const vence = formatarVencimento(venceEm)
   const gerenciador = blocoGerenciador(conta, para)
+  const ativacao = blocoChave(chave)
   const texto = [
     `Olá, ${primeiro}!`,
     '',
@@ -59,7 +77,9 @@ export function montarEmailTeste({ nome, venceEm, para, conta }: EmailTeste, lin
     '',
     `1. Baixe o MeganN18.zip: ${link}`,
     '2. Extraia a pasta inteira (não abra o .exe de dentro do .zip).',
-    `3. Abra o MeganN18.exe e entre com este e-mail: ${para}`,
+    `3. Abra o MeganN18.exe e entre com este e-mail (${para}) e a chave de ativação abaixo.`,
+    '',
+    ...ativacao.texto,
     '',
     'Requisitos: Windows 64 bits, internet e MetaTrader 5 aberto, logado na sua corretora e com Algo Trading ligado.',
     'Comece em modo simulado (PAPER/Replay) até se sentir seguro.',
@@ -79,9 +99,10 @@ export function montarEmailTeste({ nome, venceEm, para, conta }: EmailTeste, lin
     </p>
     <ol>
       <li>Extraia a pasta inteira (não abra o .exe de dentro do .zip).</li>
-      <li>Abra o <b>MeganN18.exe</b> e entre com este e-mail: <b>${escapar(para)}</b>.</li>
+      <li>Abra o <b>MeganN18.exe</b> e entre com este e-mail (<b>${escapar(para)}</b>) e a chave de ativação abaixo.</li>
       <li>Deixe o MetaTrader 5 aberto, logado na sua corretora e com Algo Trading ligado.</li>
     </ol>
+    ${ativacao.html}
     <p>Comece em modo simulado (PAPER/Replay) até se sentir seguro.</p>
     ${gerenciador.html}
     <p style="color:#6b7280;font-size:12px">Operações em renda variável envolvem risco. Resultados passados não garantem resultados futuros.</p>

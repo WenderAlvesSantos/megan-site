@@ -97,6 +97,17 @@ describe('liberarCompra', () => {
     expect(emails[0].conta).toBeUndefined()
   })
 
+  it('cliente sem chave ganha chave nova no e-mail; quem já tem continua com a mesma', async () => {
+    const novo = banco()
+    await liberarCompra(pagamento(), novo.d)
+    expect(novo.chaves[0]?.chave).toMatch(/^MEGN-/)
+    expect(novo.emails[0].chave).toBe(novo.chaves[0]?.chave)
+    const antigo = banco({ usuario: usuario({ plan: 'trial', licenseKeyHash: 'abc', machineId: 'm1' }) })
+    await liberarCompra(pagamento(), antigo.d)
+    expect(antigo.chaves[0]).toBeNull()
+    expect(antigo.emails[0].chave).toBeNull()
+  })
+
   it('licença sem vencimento (cliente antigo) não é rebaixada para anual', async () => {
     const { d, ativacoes } = banco({ usuario: usuario({ contract: 200 }) })
     expect((await liberarCompra(pagamento(), d)).status).toBe('sem_vencimento')
@@ -123,13 +134,20 @@ describe('situacaoCompra', () => {
 describe('montarEmailCompra', () => {
   it('leva link, validade e acesso ao gerenciador', () => {
     const m = montarEmailCompra(
-      { para: 'a@b.com', nome: 'Ana Lima', licencaAte: new Date('2027-10-29T15:00:00Z'), conta: { url: 'https://g', senha: 'Xy3' } },
+      { para: 'a@b.com', nome: 'Ana Lima', licencaAte: new Date('2027-10-29T15:00:00Z'), conta: { url: 'https://g', senha: 'Xy3' }, chave: 'MEGN-1234-5678-9ABC-DEFG' },
       'https://drive/x',
     )
     for (const corpo of [m.texto, m.html]) {
       expect(corpo).toContain('https://drive/x')
       expect(corpo).toContain('29/10/2027')
       expect(corpo).toContain('Xy3')
+      expect(corpo).toContain('MEGN-1234-5678-9ABC-DEFG')
     }
+  })
+
+  it('cliente que já tem chave: lembra de usar a mesma', () => {
+    const m = montarEmailCompra({ para: 'a@b.com', nome: 'Ana', licencaAte: new Date(), chave: null }, 'https://drive/x')
+    expect(m.texto).toContain('mesma chave de ativação')
+    expect(m.texto).not.toContain('Chave: ')
   })
 })

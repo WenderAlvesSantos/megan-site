@@ -1,8 +1,11 @@
 {
-  "rewrites": [{ "source": "/comprar", "destination": "/index.html" }],
+  "rewrites": [
+    { "source": "/comprar", "destination": "/index.html" },
+    { "source": "/admin", "destination": "/index.html" }
+  ],
   "headers": [
     {
-      "source": "/comprar",
+      "source": "/(comprar|admin)",
       "headers": [{ "key": "X-Robots-Tag", "value": "noindex, nofollow" }]
     }
   ],
