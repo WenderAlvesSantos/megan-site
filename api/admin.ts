@@ -2,18 +2,16 @@ import type { VercelRequest, VercelResponse } from '@vercel/node'
 import {
   adminAutorizado,
   aplicarConfigGerenciador,
+  configurarGerenciadorCliente,
   emitirNovaChave,
   gerarChavesFaltantes,
-  resumoCliente,
   type DepsAdmin,
-  type DepsConfigGerenciador,
 } from '../lib/admin.js'
+import { dadosPainel, depsConfigGerenciador, detalheCliente, listarClientes } from '../lib/adminDados.js'
 import { enviarEmailChave } from '../lib/emailChave.js'
-import { configurarGerenciador } from '../lib/gerenciador.js'
-import { colecaoEventos, colecaoUsuarios, registrarEvento } from '../lib/mongo.js'
+import { colecaoUsuarios, registrarEvento } from '../lib/mongo.js'
 import { normalizarEmail } from '../lib/validacao.js'
 
-const escaparRegex = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
 const esperar = (ms: number) => new Promise((r) => setTimeout(r, ms))
 
 async function deps(): Promise<DepsAdmin> {
@@ -30,32 +28,45 @@ async function deps(): Promise<DepsAdmin> {
   }
 }
 
-async function depsConfigGerenciador(): Promise<DepsConfigGerenciador> {
-  const usuarios = await colecaoUsuarios()
-  const semConfig = { gerenciadorConfigAt: { $exists: false } }
-  return {
-    pendentes: async (limite) =>
-      (await usuarios.find(semConfig, { projection: { email: 1 } }).sort({ createdAt: 1 }).limit(limite).toArray()).map((u) => u.email),
-    contarPendentes: () => usuarios.countDocuments(semConfig),
-    configurar: configurarGerenciador,
-    marcar: async (emails) => {
-      await usuarios.updateMany({ email: { $in: emails } }, { $set: { gerenciadorConfigAt: new Date() } })
-    },
+async function responderGet(req: VercelRequest, res: VercelResponse) {
+  const q = req.query as Record<string, unknown>
+  if (q.visao === 'painel') {
+    res.status(200).json(await dadosPainel(q))
+    return
   }
+  if (q.email) {
+    const cliente = await detalheCliente(normalizarEmail(q.email))
+    res.status(cliente ? 200 : 404).json(cliente ? { cliente } : { erro: 'Cliente não encontrado.' })
+    return
+  }
+  res.status(200).json(await listarClientes(q))
 }
 
-async function buscar(termo: string) {
-  const [usuarios, eventos] = await Promise.all([colecaoUsuarios(), colecaoEventos()])
-  const re = new RegExp(escaparRegex(termo.trim()), 'i')
-  const filtro = termo.trim() ? { $or: [{ email: re }, { name: re }] } : {}
-  const lista = await usuarios.find(filtro).sort({ createdAt: -1 }).limit(20).toArray()
-  const evs = await eventos
-    .find({ email: { $in: lista.map((u) => u.email) } })
-    .sort({ em: -1 })
-    .limit(200)
-    .toArray()
-  const agora = new Date()
-  return lista.map((u) => resumoCliente(u, evs, agora))
+async function responderPost(req: VercelRequest, res: VercelResponse) {
+  const corpo = (req.body ?? {}) as { acao?: string; email?: string }
+  const email = normalizarEmail(corpo.email)
+  switch (corpo.acao) {
+    case 'nova-chave': {
+      const r = await emitirNovaChave(email, 'troca', await deps())
+      res.status(r.ok ? 200 : 404).json(r)
+      return
+    }
+    case 'gerar-faltantes':
+      res.status(200).json(await gerarChavesFaltantes(await deps()))
+      return
+    case 'config-gerenciador':
+      res.status(200).json(await aplicarConfigGerenciador(await depsConfigGerenciador()))
+      return
+    case 'config-gerenciador-cliente':
+      if (!(await detalheCliente(email))) {
+        res.status(404).json({ erro: 'Cliente não encontrado.' })
+        return
+      }
+      res.status(200).json(await configurarGerenciadorCliente(email, await depsConfigGerenciador()))
+      return
+    default:
+      res.status(400).json({ erro: 'Ação desconhecida.' })
+  }
 }
 
 // Página /admin do suporte. Senha em ADMIN_PASSWORD (mínimo 12 caracteres).
@@ -72,29 +83,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return
   }
   try {
-    if (req.method === 'GET') {
-      res.status(200).json({ clientes: await buscar(String(req.query.q ?? '')) })
-      return
-    }
-    if (req.method !== 'POST') {
-      res.status(405).end()
-      return
-    }
-    const corpo = (req.body ?? {}) as { acao?: string; email?: string }
-    if (corpo.acao === 'nova-chave') {
-      const r = await emitirNovaChave(normalizarEmail(corpo.email), 'troca', await deps())
-      res.status(r.ok ? 200 : 404).json(r)
-      return
-    }
-    if (corpo.acao === 'gerar-faltantes') {
-      res.status(200).json(await gerarChavesFaltantes(await deps()))
-      return
-    }
-    if (corpo.acao === 'config-gerenciador') {
-      res.status(200).json(await aplicarConfigGerenciador(await depsConfigGerenciador()))
-      return
-    }
-    res.status(400).json({ erro: 'Ação desconhecida.' })
+    if (req.method === 'GET') await responderGet(req, res)
+    else if (req.method === 'POST') await responderPost(req, res)
+    else res.status(405).end()
   } catch (e) {
     console.error('[admin] erro', e)
     res.status(500).json({ erro: 'Falha no servidor. Tente de novo.' })

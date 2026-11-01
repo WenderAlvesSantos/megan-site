@@ -3,6 +3,7 @@ import { gerarChave } from './chave.js'
 import { fimDoTeste } from './diasUteis.js'
 import type { EmailTeste } from './email.js'
 import type { ContaGerenciador } from './gerenciador.js'
+import { CONTRATOS_TESTE } from './licenca.js'
 import type { UsuarioMegan } from './mongo.js'
 import { validarCadastro } from './validacao.js'
 
@@ -14,7 +15,6 @@ export interface DepsCadastro {
   enviarEmail: (dados: EmailTeste) => Promise<void>
   agora: () => Date
   diasTeste: number
-  contratosTeste: number
 }
 
 export interface RespostaCadastro {
@@ -54,7 +54,7 @@ export async function processarCadastro(corpo: unknown, deps: DepsCadastro): Pro
     email,
     phone: telefone,
     active: true,
-    contract: deps.contratosTeste,
+    contract: CONTRATOS_TESTE,
     plan: 'trial',
     trialStartedAt: agora,
     trialEndsAt: venceEm,

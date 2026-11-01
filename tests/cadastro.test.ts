@@ -28,7 +28,6 @@ function deps(existente: UsuarioMegan | null = null, falhaEmail = false, duplica
     },
     agora: () => new Date('2026-10-29T13:00:00Z'),
     diasTeste: 10,
-    contratosTeste: 1,
   }
   return { d, inseridos, emails, contas }
 }

@@ -13,6 +13,14 @@ describe('avaliarLicenca', () => {
     expect(r).toMatchObject({ ok: true, plano: 'trial', contratos: 1, venceEm: '2026-11-19T21:30:00.000Z' })
   })
 
+  it('teste opera com 1 contrato mesmo se foi cadastrado com outro valor; licença paga mantém o seu', () => {
+    const fim = new Date('2026-11-19T21:30:00Z')
+    expect(avaliarLicenca({ ...base, plan: 'trial', trialEndsAt: fim, contract: 5 }, agora).contratos).toBe(1)
+    expect(avaliarLicenca({ ...base, plan: 'trial', trialEndsAt: fim, contract: 0 }, agora).contratos).toBe(1)
+    const anual = { ...base, plan: 'anual', licenseEndsAt: new Date('2027-11-01'), contract: 0 }
+    expect(avaliarLicenca(anual, agora).contratos).toBe(0)
+  })
+
   it('trial vencido bloqueia e cita a data', () => {
     const r = avaliarLicenca({ ...base, plan: 'trial', trialEndsAt: new Date('2026-11-09T21:30:00Z') }, agora, 'wa.me/5511')
     expect(r.ok).toBe(false)

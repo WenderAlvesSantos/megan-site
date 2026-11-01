@@ -28,7 +28,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       enviarEmail: enviarEmailTeste,
       agora: () => new Date(),
       diasTeste: config.diasTeste(),
-      contratosTeste: config.contratosTeste(),
     })
     res.status(r.status === 'invalido' ? 400 : 200).json(r)
   } catch (e) {

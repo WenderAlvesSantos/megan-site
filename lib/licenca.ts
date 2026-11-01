@@ -10,6 +10,9 @@ export interface ResultadoLicenca {
   mensagem: string
 }
 
+/** O teste gratuito opera sempre com 1 contrato, inclusive quem foi cadastrado com outro valor. */
+export const CONTRATOS_TESTE = 1
+
 function vencimento(u: UsuarioMegan): Date | null {
   const d = u.plan === 'anual' ? u.licenseEndsAt : u.plan === 'trial' ? u.trialEndsAt : undefined
   return d ? new Date(d) : null
@@ -40,7 +43,7 @@ export function avaliarLicenca(u: UsuarioMegan | null, agora: Date, contato = ''
   return {
     ok: true,
     nome: u.name,
-    contratos: Math.max(0, Number(u.contract) || 0),
+    contratos: plano === 'trial' ? CONTRATOS_TESTE : Math.max(0, Number(u.contract) || 0),
     plano,
     venceEm: vence ? vence.toISOString() : null,
     mensagem: 'OK',

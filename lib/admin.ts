@@ -5,39 +5,58 @@ import type { EmailChave, MotivoChave } from './emailChave.js'
 import type { ResultadoConfigGerenciador } from './gerenciador.js'
 import { avaliarLicenca } from './licenca.js'
 import type { EventoLicenca, UsuarioMegan } from './mongo.js'
+import { statusCliente, type StatusCliente } from './statusCliente.js'
 
 export function adminAutorizado(cabecalho: string, senha: string): boolean {
   const h = (v: string) => createHash('sha256').update(v).digest()
   return timingSafeEqual(h(cabecalho), h(`Bearer ${senha}`))
 }
 
-export interface ClienteAdmin {
+/** Linha da listagem: só o essencial; os detalhes vêm ao abrir o cliente. */
+export interface ClienteLinha {
   nome: string
   email: string
+  status: StatusCliente
+}
+
+export interface ClienteAdmin extends ClienteLinha {
   telefone: string
   plano: string
   ativo: boolean
   liberado: boolean
+  contratos: number
   venceEm: string | null
+  cadastradoEm: string | null
+  origem: string
   chaveFinal: string | null
   chaveGeradaEm: string | null
   vinculadaEm: string | null
   ultimaConsulta: string | null
+  gerenciadorConfigEm: string | null
   eventos: { tipo: string; em: string; detalhe?: string }[]
 }
 
 const iso = (d?: Date | null) => (d ? new Date(d).toISOString() : null)
 
+export const linhaCliente = (u: UsuarioMegan, agora: Date): ClienteLinha => ({
+  nome: u.name,
+  email: u.email,
+  status: statusCliente(u, agora),
+})
+
 export function resumoCliente(u: UsuarioMegan, eventos: EventoLicenca[], agora: Date): ClienteAdmin {
   const lic = avaliarLicenca(u, agora)
   return {
-    nome: u.name,
-    email: u.email,
+    ...linhaCliente(u, agora),
     telefone: u.phone ?? '',
     plano: u.plan || 'licenca',
     ativo: u.active,
     liberado: lic.ok,
+    contratos: lic.ok ? lic.contratos : Math.max(0, Number(u.contract) || 0),
     venceEm: lic.venceEm,
+    cadastradoEm: iso(u.createdAt),
+    origem: u.source ?? '',
+    gerenciadorConfigEm: iso(u.gerenciadorConfigAt),
     chaveFinal: u.licenseKeyHint ?? null,
     chaveGeradaEm: iso(u.licenseKeyCreatedAt),
     vinculadaEm: u.machineId ? iso(u.machineBoundAt) ?? '' : null,
@@ -99,6 +118,19 @@ export interface ResumoConfigGerenciador {
   jaTinham: number
   semConta: string[]
   restantes: number
+}
+
+export type ResultadoConfigCliente = { status: 'aplicado' | 'ja_tinha' | 'sem_conta' }
+
+/** Um cliente: cria a configuração da Megan no trade-manager se faltar (nunca sobrescreve) e marca como feito. */
+export async function configurarGerenciadorCliente(
+  email: string,
+  deps: Pick<DepsConfigGerenciador, 'configurar' | 'marcar'>,
+): Promise<ResultadoConfigCliente> {
+  const r = await deps.configurar([email])
+  await deps.marcar([email])
+  if (r.aplicados.includes(email)) return { status: 'aplicado' }
+  return { status: r.semConta.includes(email) ? 'sem_conta' : 'ja_tinha' }
 }
 
 /** Clientes antigos, um lote por chamada: cria a configuração da Megan no trade-manager de quem ainda não tem. */

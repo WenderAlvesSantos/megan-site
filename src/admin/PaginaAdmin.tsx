@@ -1,14 +1,17 @@
-import { useEffect, useState, type FormEvent } from 'react'
-import { buscarClientes, configGerenciador, ErroAdmin, gerarFaltantes, type ClienteAdmin } from './apiAdmin'
-import CartaoCliente from './CartaoCliente'
+import { useEffect, useState } from 'react'
+import './admin.css'
+import { ErroAdmin, listarClientes } from './apiAdmin'
+import Dashboard from './Dashboard'
+import ListaClientes from './ListaClientes'
+import LoginAdmin from './LoginAdmin'
+import MenuLateral, { type SecaoAdmin } from './MenuLateral'
 
 const CHAVE_SESSAO = 'megan-admin'
+const secaoDaUrl = (): SecaoAdmin => (window.location.hash === '#clientes' ? 'clientes' : 'dashboard')
 
 export default function PaginaAdmin() {
   const [senha, setSenha] = useState(() => sessionStorage.getItem(CHAVE_SESSAO) ?? '')
-  const [digitada, setDigitada] = useState('')
-  const [termo, setTermo] = useState('')
-  const [clientes, setClientes] = useState<ClienteAdmin[] | null>(null)
+  const [secao, setSecao] = useState<SecaoAdmin>(secaoDaUrl)
   const [aviso, setAviso] = useState('')
   const [ocupado, setOcupado] = useState(false)
 
@@ -18,137 +21,44 @@ export default function PaginaAdmin() {
     meta.name = 'robots'
     meta.content = 'noindex, nofollow'
     document.head.appendChild(meta)
-    return () => meta.remove()
+    const voltar = () => setSecao(secaoDaUrl())
+    window.addEventListener('hashchange', voltar)
+    return () => {
+      meta.remove()
+      window.removeEventListener('hashchange', voltar)
+    }
   }, [])
 
-  async function carregar(s = senha, q = termo) {
+  async function entrar(s: string) {
     setOcupado(true)
     setAviso('')
     try {
-      setClientes(await buscarClientes(s, q))
+      await listarClientes(s, { q: '', status: '', pagina: 1 })
       sessionStorage.setItem(CHAVE_SESSAO, s)
       setSenha(s)
     } catch (e) {
-      if (e instanceof ErroAdmin && e.status === 401) {
-        sessionStorage.removeItem(CHAVE_SESSAO)
-        setSenha('')
-      }
-      setAviso((e as Error).message)
+      setAviso(e instanceof ErroAdmin && e.status === 401 ? 'Senha incorreta.' : (e as Error).message)
     } finally {
       setOcupado(false)
     }
   }
 
-  async function migrar() {
-    if (!window.confirm('Gerar e enviar por e-mail a chave de todos os clientes com acesso válido que ainda não têm chave?')) return
-    setOcupado(true)
-    let total = 0
-    const falhas: string[] = []
-    try {
-      for (;;) {
-        const r = await gerarFaltantes(senha)
-        total += r.geradas
-        falhas.push(...r.semEmail)
-        setAviso(`Chaves geradas: ${total}...`)
-        if (r.restantes <= 0 || r.geradas === 0) break
-      }
-      setAviso(`Chaves geradas: ${total}.${falhas.length ? ` E-mail falhou para: ${falhas.join(', ')}` : ''}`)
-      await carregar()
-    } catch (e) {
-      setAviso(`Erro após ${total} chaves: ${(e as Error).message}`)
-    } finally {
-      setOcupado(false)
-    }
+  function sair() {
+    sessionStorage.removeItem(CHAVE_SESSAO)
+    setSenha('')
   }
 
-  async function configurarGerenciador() {
-    if (!window.confirm('Aplicar a configuração da Megan (WIN Real + Simulador) no trade-manager dos clientes que ainda não têm? Configurações existentes não são alteradas.')) return
-    setOcupado(true)
-    let aplicados = 0
-    let jaTinham = 0
-    const semConta: string[] = []
-    try {
-      for (;;) {
-        const r = await configGerenciador(senha)
-        aplicados += r.aplicados
-        jaTinham += r.jaTinham
-        semConta.push(...r.semConta)
-        setAviso(`Trade-manager: ${aplicados} configurado(s)... faltam ${r.restantes}`)
-        if (r.restantes <= 0 || r.aplicados + r.jaTinham + r.semConta.length === 0) break
-      }
-      setAviso(
-        `Trade-manager: ${aplicados} cliente(s) configurado(s), ${jaTinham} já tinham configuração` +
-          (semConta.length ? `, ${semConta.length} sem conta no trade-manager.` : '.'),
-      )
-    } catch (e) {
-      setAviso(`Erro após ${aplicados} cliente(s): ${(e as Error).message}`)
-    } finally {
-      setOcupado(false)
-    }
+  function ir(s: SecaoAdmin) {
+    window.location.hash = s
+    setSecao(s)
   }
 
-  if (!senha) {
-    return (
-      <main className="secao admin">
-        <form
-          className="cartao-form form admin-login"
-          onSubmit={(e: FormEvent) => {
-            e.preventDefault()
-            carregar(digitada, '')
-          }}
-        >
-          <h3>Suporte Megan N18</h3>
-          <label>
-            Senha
-            <input type="password" value={digitada} onChange={(e) => setDigitada(e.target.value)} autoFocus />
-          </label>
-          {aviso && <p className="erro">{aviso}</p>}
-          <button type="submit" className="btn btn-largo" disabled={ocupado || !digitada}>
-            Entrar
-          </button>
-        </form>
-      </main>
-    )
-  }
+  if (!senha) return <LoginAdmin aviso={aviso} ocupado={ocupado} onEntrar={entrar} />
 
   return (
-    <main className="secao admin">
-      <div className="container">
-        <h2>Suporte · Chaves de ativação</h2>
-        <form
-          className="admin-busca"
-          onSubmit={(e: FormEvent) => {
-            e.preventDefault()
-            carregar()
-          }}
-        >
-          <input placeholder="E-mail ou nome do cliente" value={termo} onChange={(e) => setTermo(e.target.value)} />
-          <button type="submit" className="btn" disabled={ocupado}>Buscar</button>
-          <button type="button" className="btn btn-fantasma" onClick={migrar} disabled={ocupado}>
-            Gerar chaves para quem não tem
-          </button>
-          <button type="button" className="btn btn-fantasma" onClick={configurarGerenciador} disabled={ocupado}>
-            Configurar trade-manager dos clientes antigos
-          </button>
-          <button
-            type="button"
-            className="btn btn-fantasma"
-            onClick={() => {
-              sessionStorage.removeItem(CHAVE_SESSAO)
-              setSenha('')
-              setClientes(null)
-            }}
-          >
-            Sair
-          </button>
-        </form>
-        {aviso && <p className="destaque">{aviso}</p>}
-        {clientes === null && <p className="texto-apoio">Busque um cliente (vazio = 20 cadastros mais recentes).</p>}
-        {clientes?.length === 0 && <p className="texto-apoio">Nenhum cliente encontrado.</p>}
-        <div className="admin-lista">
-          {clientes?.map((c) => <CartaoCliente key={c.email} cliente={c} senha={senha} onAtualizar={() => carregar()} />)}
-        </div>
-      </div>
-    </main>
+    <div className="admin-app">
+      <MenuLateral ativa={secao} onIr={ir} onSair={sair} />
+      {secao === 'dashboard' ? <Dashboard senha={senha} /> : <ListaClientes senha={senha} />}
+    </div>
   )
 }
