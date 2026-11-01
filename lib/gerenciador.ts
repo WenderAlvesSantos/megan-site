@@ -47,6 +47,9 @@ export type ContaTipo = 'SIMULADOR' | 'REAL'
 
 export interface BancaGerenciador {
   configured: boolean
+  /** false = banca padrão (R$ 1.000) ainda não confirmada pelo cliente */
+  bankrollConfirmed: boolean
+  initialBankroll: number
   bankroll: number
   contracts: number
   suggestedContracts: number
@@ -60,6 +63,8 @@ export interface MudancasBanca {
   banca?: number
   /** Contratos com que a Megan iniciou no ao vivo (vira o nível atual no gerenciador). */
   contratos?: number
+  /** Primeiro uso: o cliente confirma a banca que já está gravada. */
+  confirmar?: boolean
 }
 
 /** Banca e contratos sugeridos do WIN na conta, depois de gravar as mudanças pedidas (se houver). */
@@ -73,12 +78,15 @@ export async function bancaGerenciador(
     accountType,
     ...(mudancas.banca === undefined ? {} : { initialBankroll: mudancas.banca }),
     ...(mudancas.contratos === undefined ? {} : { contracts: mudancas.contratos }),
+    ...(mudancas.confirmar ? { confirmBankroll: true } : {}),
   })
   if (resp.status === 404) return 'sem_usuario'
   if (!resp.ok) throw new Error(`Gerenciador respondeu HTTP ${resp.status}`)
   const d = (await resp.json()) as Partial<BancaGerenciador>
   return {
     configured: Boolean(d.configured),
+    bankrollConfirmed: Boolean(d.bankrollConfirmed),
+    initialBankroll: Number(d.initialBankroll ?? 0),
     bankroll: Number(d.bankroll ?? 0),
     contracts: Number(d.contracts ?? 0),
     suggestedContracts: Number(d.suggestedContracts ?? 0),
@@ -94,9 +102,12 @@ export interface ResultadoConfigGerenciador {
   semConta: string[]
 }
 
-/** Clientes antigos: cria a configuração da Megan no gerenciador de quem ainda não tem (nada é sobrescrito). */
-export async function configurarGerenciador(emails: string[]): Promise<ResultadoConfigGerenciador> {
-  const resp = await postGerenciador('/api/integracao/configuracao', { emails })
+/**
+ * Configuração da Megan (WIN Real + Simulador) no gerenciador. Em lote só cria onde falta;
+ * com `sobrescrever` (botão de um cliente) aplica também sobre a existente, mantendo banca e contratos.
+ */
+export async function configurarGerenciador(emails: string[], sobrescrever = false): Promise<ResultadoConfigGerenciador> {
+  const resp = await postGerenciador('/api/integracao/configuracao', { emails, ...(sobrescrever ? { sobrescrever: true } : {}) })
   if (!resp.ok) throw new Error(`Gerenciador respondeu HTTP ${resp.status}`)
   const d = (await resp.json()) as Partial<ResultadoConfigGerenciador>
   return { aplicados: d.aplicados ?? [], jaTinham: d.jaTinham ?? [], semConta: d.semConta ?? [] }

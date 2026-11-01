@@ -7,7 +7,7 @@ import type { UsuarioMegan } from '../lib/mongo.js'
 const PC1 = 'a'.repeat(64)
 const { chave, hash } = gerarChave()
 const BANCA: BancaGerenciador = {
-  configured: true, bankroll: 10_000, contracts: 1, suggestedContracts: 12,
+  configured: true, bankrollConfirmed: true, initialBankroll: 10_000, bankroll: 10_000, contracts: 1, suggestedContracts: 12,
   maxContracts: 150, stopCostPerContract: 62.88, protecting: false,
 }
 
@@ -37,6 +37,11 @@ describe('validarPedidoBanca', () => {
     expect(validarPedidoBanca({ accountType: 'REAL', banca: 0 })).toBeNull()
     expect(validarPedidoBanca({ accountType: 'REAL', banca: 'abc' })).toBeNull()
     expect(validarPedidoBanca({ accountType: 'DEMO' })).toBeNull()
+  })
+
+  it('confirmação da banca padrão só com o valor true', () => {
+    expect(validarPedidoBanca({ accountType: 'REAL', confirmarBanca: true })).toEqual({ conta: 'REAL', confirmar: true })
+    expect(validarPedidoBanca({ accountType: 'REAL', confirmarBanca: 'sim' })).toEqual({ conta: 'REAL' })
   })
 
   it('contratos com que a Megan iniciou: inteiro de 1 a 10.000', () => {

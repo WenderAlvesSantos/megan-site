@@ -29,6 +29,7 @@ export function validarPedidoBanca(corpo: Record<string, unknown>): ({ conta: Co
     if (!Number.isInteger(contratos) || contratos < 1 || contratos > 10_000) return null
     pedido.contratos = contratos
   }
+  if (corpo.confirmarBanca === true) pedido.confirmar = true
   return pedido
 }
 

@@ -11,8 +11,8 @@ const EVENTOS: Record<string, string> = {
 }
 
 const RESULTADO_GERENCIADOR = {
-  aplicado: 'Configuração da Megan aplicada no trade-manager (WIN Real + Simulador).',
-  ja_tinha: 'O cliente já tinha configuração no trade-manager — nada foi alterado.',
+  aplicado: 'Configuração da Megan aplicada no trade-manager nas contas Real e Simulador (WIN). Banca e contratos foram mantidos.',
+  ja_tinha: 'Nada foi alterado no trade-manager.',
   sem_conta: 'Este e-mail não tem conta no trade-manager.',
 }
 
@@ -64,8 +64,17 @@ export default function ModalCliente({ senha, email, onFechar, onAtualizar }: Pr
     })
   }
 
-  const configurar = () =>
+  const configurar = () => {
+    if (
+      !window.confirm(
+        `Aplicar a configuração da Megan no trade-manager de ${email}, nas contas Real e Simulador (WIN)?\n\n` +
+          'As regras atuais (stop, meta, risco, folga e máximo de contratos) serão substituídas. ' +
+          'Banca e contratos são mantidos; sem banca, entra a padrão de R$ 1.000 para o cliente confirmar.',
+      )
+    )
+      return
     executar(async () => RESULTADO_GERENCIADOR[(await configGerenciadorCliente(senha, email)).status])
+  }
 
   return (
     <div className="modal-fundo" onMouseDown={(e) => e.target === e.currentTarget && onFechar()}>

@@ -109,7 +109,7 @@ export interface DepsConfigGerenciador {
   /** Clientes ainda não passados pela rotina (sem `gerenciadorConfigAt`), até `limite`. */
   pendentes: (limite: number) => Promise<string[]>
   contarPendentes: () => Promise<number>
-  configurar: (emails: string[]) => Promise<ResultadoConfigGerenciador>
+  configurar: (emails: string[], sobrescrever?: boolean) => Promise<ResultadoConfigGerenciador>
   marcar: (emails: string[]) => Promise<void>
 }
 
@@ -122,12 +122,12 @@ export interface ResumoConfigGerenciador {
 
 export type ResultadoConfigCliente = { status: 'aplicado' | 'ja_tinha' | 'sem_conta' }
 
-/** Um cliente: cria a configuração da Megan no trade-manager se faltar (nunca sobrescreve) e marca como feito. */
+/** Um cliente: aplica a configuração da Megan no Real e no Simulador (também sobre a existente) e marca como feito. */
 export async function configurarGerenciadorCliente(
   email: string,
   deps: Pick<DepsConfigGerenciador, 'configurar' | 'marcar'>,
 ): Promise<ResultadoConfigCliente> {
-  const r = await deps.configurar([email])
+  const r = await deps.configurar([email], true)
   await deps.marcar([email])
   if (r.aplicados.includes(email)) return { status: 'aplicado' }
   return { status: r.semConta.includes(email) ? 'sem_conta' : 'ja_tinha' }

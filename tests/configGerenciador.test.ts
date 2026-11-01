@@ -7,8 +7,9 @@ function fila(emails: string[], semConta: string[] = [], falha = false) {
   const d: DepsConfigGerenciador = {
     pendentes: async (limite) => pendentes.slice(0, limite),
     contarPendentes: async () => pendentes.length,
-    configurar: async (lote) => {
+    configurar: async (lote, sobrescrever) => {
       if (falha) throw new Error('gerenciador fora')
+      if (sobrescrever) throw new Error('o lote nunca sobrescreve configurações existentes')
       enviados.push(lote)
       return {
         aplicados: lote.filter((e) => !semConta.includes(e) && !e.startsWith('tem')),

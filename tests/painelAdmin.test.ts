@@ -82,13 +82,18 @@ describe('montarPainel', () => {
 describe('configurarGerenciadorCliente', () => {
   it('aplica, informa quem já tinha ou não tem conta e marca como feito', async () => {
     const marcados: string[] = []
+    const sobrescreveu: (boolean | undefined)[] = []
     const deps = (r: { aplicados: string[]; jaTinham: string[]; semConta: string[] }) => ({
-      configurar: async () => r,
+      configurar: async (_emails: string[], sobrescrever?: boolean) => {
+        sobrescreveu.push(sobrescrever)
+        return r
+      },
       marcar: async (e: string[]) => { marcados.push(...e) },
     })
     expect(await configurarGerenciadorCliente('a@x.com', deps({ aplicados: ['a@x.com'], jaTinham: [], semConta: [] }))).toEqual({ status: 'aplicado' })
     expect(await configurarGerenciadorCliente('b@x.com', deps({ aplicados: [], jaTinham: ['b@x.com'], semConta: [] }))).toEqual({ status: 'ja_tinha' })
     expect(await configurarGerenciadorCliente('c@x.com', deps({ aplicados: [], jaTinham: [], semConta: ['c@x.com'] }))).toEqual({ status: 'sem_conta' })
     expect(marcados).toEqual(['a@x.com', 'b@x.com', 'c@x.com'])
+    expect(sobrescreveu).toEqual([true, true, true])
   })
 })
