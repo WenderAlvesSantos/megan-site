@@ -18,6 +18,8 @@ export interface Kpis {
   testes: number
   /** Dos testes iniciados no período, fração que já comprou (null = nenhum teste no período). */
   conversao: number | null
+  /** Compras estornadas no período (arrependimento ou estorno no Mercado Pago). */
+  reembolsos: number
 }
 
 export interface Balde {
@@ -76,7 +78,14 @@ const noPeriodo = (d: Date | undefined, de: string, ate: string) => {
   return dia >= de && dia <= ate
 }
 
-function kpisDe(usuarios: UsuarioMegan[], pagas: CompraMegan[], de: string, ate: string, compradores: Set<string>): Kpis {
+function kpisDe(
+  usuarios: UsuarioMegan[],
+  pagas: CompraMegan[],
+  estornadas: CompraMegan[],
+  de: string,
+  ate: string,
+  compradores: Set<string>,
+): Kpis {
   const vendas = pagas.filter((c) => noPeriodo(c.aplicadaEm, de, ate))
   const receita = vendas.reduce((s, c) => s + (Number(c.valor) || 0), 0)
   const testes = usuarios.filter((u) => noPeriodo(u.trialStartedAt, de, ate))
@@ -87,12 +96,15 @@ function kpisDe(usuarios: UsuarioMegan[], pagas: CompraMegan[], de: string, ate:
     novosClientes: usuarios.filter((u) => noPeriodo(u.createdAt, de, ate)).length,
     testes: testes.length,
     conversao: testes.length ? testes.filter((u) => compradores.has(u.email)).length / testes.length : null,
+    reembolsos: estornadas.filter((c) => noPeriodo(c.reembolsadaEm, de, ate)).length,
   }
 }
 
 export function montarPainel(usuarios: UsuarioMegan[], compras: CompraMegan[], periodo: PeriodoPainel, agora: Date): Painel {
   const { de, ate, agrupar } = periodo
-  const pagas = compras.filter((c) => c.aplicadaEm)
+  // Reembolsada não é receita nem assinatura (dinheiro devolvido)
+  const pagas = compras.filter((c) => c.aplicadaEm && !c.reembolsadaEm)
+  const estornadas = compras.filter((c) => c.reembolsadaEm)
   const compradores = new Set(pagas.map((c) => c.email))
 
   const baldes = new Map<string, Balde>()
@@ -122,8 +134,8 @@ export function montarPainel(usuarios: UsuarioMegan[], compras: CompraMegan[], p
   const antesAte = somarDias(de, -1)
   return {
     periodo,
-    kpis: kpisDe(usuarios, pagas, de, ate, compradores),
-    anterior: kpisDe(usuarios, pagas, somarDias(antesAte, -(tamanho - 1)), antesAte, compradores),
+    kpis: kpisDe(usuarios, pagas, estornadas, de, ate, compradores),
+    anterior: kpisDe(usuarios, pagas, estornadas, somarDias(antesAte, -(tamanho - 1)), antesAte, compradores),
     serie: [...baldes.values()],
     situacao,
     totalClientes: usuarios.length,

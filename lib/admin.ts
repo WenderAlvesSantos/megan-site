@@ -4,7 +4,8 @@ import { gerarChave } from './chave.js'
 import type { EmailChave, MotivoChave } from './emailChave.js'
 import type { ResultadoConfigGerenciador } from './gerenciador.js'
 import { avaliarLicenca } from './licenca.js'
-import type { EventoLicenca, UsuarioMegan } from './mongo.js'
+import type { CompraMegan, EventoLicenca, UsuarioMegan } from './mongo.js'
+import { fimDoArrependimento, podeReembolsar } from './reembolso.js'
 import { statusCliente, type StatusCliente } from './statusCliente.js'
 
 export function adminAutorizado(cabecalho: string, senha: string): boolean {
@@ -33,7 +34,30 @@ export interface ClienteAdmin extends ClienteLinha {
   vinculadaEm: string | null
   ultimaConsulta: string | null
   gerenciadorConfigEm: string | null
+  compra: CompraResumo | null
   eventos: { tipo: string; em: string; detalhe?: string }[]
+}
+
+/** Última compra paga: valor, prazo de arrependimento (7 dias) e se o suporte ainda pode reembolsar. */
+export interface CompraResumo {
+  valor: number
+  pagaEm: string
+  arrependimentoAte: string
+  podeReembolsar: boolean
+  reembolsadaEm: string | null
+  reembolsoOrigem: string | null
+}
+
+export function resumoCompra(c: CompraMegan | null, agora: Date): CompraResumo | null {
+  if (!c?.aplicadaEm) return null
+  return {
+    valor: Number(c.valor) || 0,
+    pagaEm: new Date(c.aplicadaEm).toISOString(),
+    arrependimentoAte: (fimDoArrependimento(c) as Date).toISOString(),
+    podeReembolsar: podeReembolsar(c, agora),
+    reembolsadaEm: iso(c.reembolsadaEm),
+    reembolsoOrigem: c.reembolsoOrigem ?? null,
+  }
 }
 
 const iso = (d?: Date | null) => (d ? new Date(d).toISOString() : null)
@@ -44,7 +68,12 @@ export const linhaCliente = (u: UsuarioMegan, agora: Date): ClienteLinha => ({
   status: statusCliente(u, agora),
 })
 
-export function resumoCliente(u: UsuarioMegan, eventos: EventoLicenca[], agora: Date): ClienteAdmin {
+export function resumoCliente(
+  u: UsuarioMegan,
+  eventos: EventoLicenca[],
+  agora: Date,
+  compra: CompraMegan | null = null,
+): ClienteAdmin {
   const lic = avaliarLicenca(u, agora)
   return {
     ...linhaCliente(u, agora),
@@ -57,6 +86,7 @@ export function resumoCliente(u: UsuarioMegan, eventos: EventoLicenca[], agora: 
     cadastradoEm: iso(u.createdAt),
     origem: u.source ?? '',
     gerenciadorConfigEm: iso(u.gerenciadorConfigAt),
+    compra: resumoCompra(compra, agora),
     chaveFinal: u.licenseKeyHint ?? null,
     chaveGeradaEm: iso(u.licenseKeyCreatedAt),
     vinculadaEm: u.machineId ? iso(u.machineBoundAt) ?? '' : null,

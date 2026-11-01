@@ -4,10 +4,12 @@ import { config } from './config.js'
 import { enviarEmailCompra } from './emailCompra.js'
 import { criarContaGerenciador } from './gerenciador.js'
 import type { DepsLiberacao } from './liberacao.js'
-import { criarPreferencia, pagamentosDaCompra } from './mercadopago.js'
+import { criarPreferencia, estornarPagamento, pagamentosDaCompra } from './mercadopago.js'
 import { camposNovaChave } from './ativacao.js'
+import { enviarEmailReembolso } from './emailReembolso.js'
 import { colecaoCompras, colecaoUsuarios, registrarEvento } from './mongo.js'
 import type { DepsReconciliacao } from './reconciliacao.js'
+import type { DepsReembolso } from './reembolso.js'
 
 export async function depsCheckoutReais(): Promise<DepsCheckout> {
   const compras = await colecaoCompras()
@@ -66,6 +68,29 @@ export async function depsLiberacaoReais(): Promise<DepsLiberacao> {
     criarContaGerenciador,
     enviarEmail: enviarEmailCompra,
     pagamentosDaCompra,
+  }
+}
+
+export async function depsReembolsoReais(): Promise<DepsReembolso> {
+  const [compras, usuarios] = await Promise.all([colecaoCompras(), colecaoUsuarios()])
+  return {
+    agora: () => new Date(),
+    ultimaCompraPaga: (email) => compras.findOne({ email, aplicadaEm: { $exists: true } }, { sort: { aplicadaEm: -1 } }),
+    buscarCompra: (id) => compras.findOne({ _id: id }),
+    estornar: estornarPagamento,
+    marcarReembolsada: async (id, agora, origem) => {
+      const r = await compras.updateOne(
+        { _id: id, reembolsadaEm: { $exists: false } },
+        { $set: { status: 'reembolsada', reembolsadaEm: agora, reembolsoOrigem: origem } },
+      )
+      return r.modifiedCount === 1
+    },
+    buscarUsuario: (email) => usuarios.findOne({ email }),
+    encurtarLicenca: async (email, licencaAte) => {
+      await usuarios.updateOne({ email }, { $set: { licenseEndsAt: licencaAte, updatedAt: new Date() } })
+    },
+    evento: registrarEvento,
+    avisarCliente: enviarEmailReembolso,
   }
 }
 

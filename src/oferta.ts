@@ -5,5 +5,10 @@ export const DIAS_TESTE = 10
 export const PRECO_ANUAL = 1599
 export const PARCELAS_ANUAL = 12
 
+/** Deve ser igual a PRAZO_ARREPENDIMENTO_DIAS em lib/reembolso.ts (direito de arrependimento, CDC art. 49) */
+export const DIAS_ARREPENDIMENTO = 7
+
+export const POLITICA_CANCELAMENTO = `Você pode desistir da compra em até ${DIAS_ARREPENDIMENTO} dias após a aprovação do pagamento e recebe 100% do valor de volta. Depois desse prazo, a licença anual não tem reembolso.`
+
 export const precoFormatado = (valor: number) =>
   valor.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })

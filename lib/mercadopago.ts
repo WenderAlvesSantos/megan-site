@@ -73,6 +73,18 @@ export function buscarPagamento(id: string): Promise<PagamentoMP> {
   return chamar<PagamentoMP>(`/v1/payments/${encodeURIComponent(id)}`)
 }
 
+/** Estorno total do pagamento (Pix devolvido / cartão: parcelas canceladas pelo Mercado Pago). */
+export async function estornarPagamento(pagamentoId: string, compraId: string): Promise<void> {
+  await chamar(`/v1/payments/${encodeURIComponent(pagamentoId)}/refunds`, {
+    method: 'POST',
+    headers: { 'X-Idempotency-Key': `reembolso-${compraId}` },
+    body: '{}',
+  })
+}
+
+/** Status do pagamento no Mercado Pago quando o dinheiro voltou ao cliente. */
+export const STATUS_ESTORNADO = ['refunded', 'charged_back']
+
 export async function pagamentosDaCompra(compraId: string): Promise<PagamentoMP[]> {
   const r = await chamar<{ results?: PagamentoMP[] }>(
     `/v1/payments/search?external_reference=${encodeURIComponent(compraId)}&sort=date_created&criteria=desc`,

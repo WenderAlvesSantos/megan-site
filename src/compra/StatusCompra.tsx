@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { consultarCompra, type SituacaoCompra } from '../api'
+import { POLITICA_CANCELAMENTO } from '../oferta'
 
 const INTERVALO_MS = 4000
 const TENTATIVAS = 60
@@ -43,6 +44,7 @@ export default function StatusCompra({ id }: { id: string }) {
         )}
         <p>Enviamos para {situacao.email} o link de download da Megan N18 e o acesso ao Megan Trade Manager.</p>
         <p className="nota">Se você já usa a Megan, basta abrir o programa: a licença é atualizada sozinha.</p>
+        <p className="nota">{POLITICA_CANCELAMENTO}</p>
       </div>
     )
   }

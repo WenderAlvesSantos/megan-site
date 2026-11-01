@@ -133,6 +133,19 @@
   color: var(--texto) !important;
 }
 
+.admin-app .btn-perigo {
+  background: rgba(239, 68, 68, 0.14);
+  border: 1px solid rgba(239, 68, 68, 0.45);
+  box-shadow: none;
+  color: #fca5a5 !important;
+  margin-right: auto;
+}
+
+.admin-app .btn-perigo:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
 /* campos */
 .admin-app,
 .admin-login {
@@ -238,6 +251,11 @@
 .kpi-valor {
   font-size: 1.55rem;
   font-weight: 800;
+}
+
+.kpi-extra {
+  font-size: 0.78rem;
+  color: #fca5a5;
 }
 
 .kpi-variacao {

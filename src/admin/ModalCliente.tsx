@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
-import { configGerenciadorCliente, detalheCliente, novaChave, type ClienteAdmin } from './apiAdmin'
-import { data, dataHora } from './formato'
+import { configGerenciadorCliente, detalheCliente, novaChave, reembolsar, type ClienteAdmin } from './apiAdmin'
+import { data, dataHora, moeda } from './formato'
 import SeloStatus from './SeloStatus'
 
 const EVENTOS: Record<string, string> = {
@@ -8,6 +8,7 @@ const EVENTOS: Record<string, string> = {
   ativada: 'Ativada no computador',
   outra_maquina: 'Tentou em OUTRO computador',
   chave_invalida: 'Digitou chave errada',
+  reembolso: 'Compra reembolsada',
 }
 
 const RESULTADO_GERENCIADOR = {
@@ -61,6 +62,22 @@ export default function ModalCliente({ senha, email, onFechar, onAtualizar }: Pr
     executar(async () => {
       const r = await novaChave(senha, email)
       return `Nova chave: ${r.chave} — ${r.emailEnviado ? 'enviada por e-mail' : 'o e-mail FALHOU, envie manualmente'}`
+    })
+  }
+
+  const cancelarReembolsar = () => {
+    if (!c?.compra) return
+    if (
+      !window.confirm(
+        `Cancelar a licença anual de ${email} e devolver ${moeda(c.compra.valor)} pelo Mercado Pago?\n\n` +
+          'O estorno é total (Pix devolvido / cartão: parcelas canceladas) e a licença deste ano é encerrada. Não dá para desfazer.',
+      )
+    )
+      return
+    executar(async () => {
+      const r = await reembolsar(senha, email)
+      const ate = new Date(r.licencaAte).getTime() > Date.now() + 60_000 ? ` Licença do ano anterior segue até ${dataHora(r.licencaAte)}.` : ' Licença encerrada.'
+      return `Reembolso feito.${ate} ${r.emailEnviado ? 'Cliente avisado por e-mail.' : 'O e-mail ao cliente FALHOU — avise manualmente.'}`
     })
   }
 
@@ -125,6 +142,25 @@ export default function ModalCliente({ senha, email, onFechar, onAtualizar }: Pr
                 <dd>{dataHora(c.ultimaConsulta)}</dd>
               </dl>
             </section>
+            {c.compra && (
+              <section>
+                <h4>Compra</h4>
+                <dl>
+                  <dt>Valor</dt>
+                  <dd>{moeda(c.compra.valor)}</dd>
+                  <dt>Paga em</dt>
+                  <dd>{dataHora(c.compra.pagaEm)}</dd>
+                  <dt>Arrependimento</dt>
+                  <dd>
+                    {c.compra.reembolsadaEm
+                      ? `reembolsada em ${dataHora(c.compra.reembolsadaEm)}${c.compra.reembolsoOrigem === 'mercadopago' ? ' (direto no Mercado Pago)' : ''}`
+                      : c.compra.podeReembolsar
+                        ? `pode desistir até ${dataHora(c.compra.arrependimentoAte)}`
+                        : `prazo terminou em ${dataHora(c.compra.arrependimentoAte)} — sem reembolso`}
+                  </dd>
+                </dl>
+              </section>
+            )}
             <section>
               <h4>Trade-manager</h4>
               <dl>
@@ -150,6 +186,17 @@ export default function ModalCliente({ senha, email, onFechar, onAtualizar }: Pr
 
         {resultado && <p className="aviso modal-resultado">{resultado}</p>}
         <footer className="modal-acoes">
+          {c?.compra && !c.compra.reembolsadaEm && (
+            <button
+              type="button"
+              className="btn btn-perigo btn-pequeno"
+              onClick={cancelarReembolsar}
+              disabled={ocupado || !c.compra.podeReembolsar}
+              title={c.compra.podeReembolsar ? 'Estorna o pagamento e encerra a licença deste ano' : 'Prazo de 7 dias encerrado — sem reembolso'}
+            >
+              Cancelar e reembolsar
+            </button>
+          )}
           <button type="button" className="btn btn-fantasma btn-pequeno" onClick={configurar} disabled={!c || ocupado}>
             Configurar trade-manager
           </button>

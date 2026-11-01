@@ -47,7 +47,13 @@ export default function Dashboard({ senha }: { senha: string }) {
         <div className={ocupado ? 'carregando' : ''}>
           <div className="kpis">
             <CartaoKpi titulo="Receita bruta" valor={moeda(painel.kpis.receita)} atual={painel.kpis.receita} anterior={painel.anterior.receita} />
-            <CartaoKpi titulo="Assinaturas" valor={inteiro(painel.kpis.assinaturas)} atual={painel.kpis.assinaturas} anterior={painel.anterior.assinaturas} />
+            <CartaoKpi
+              titulo="Assinaturas"
+              valor={inteiro(painel.kpis.assinaturas)}
+              atual={painel.kpis.assinaturas}
+              anterior={painel.anterior.assinaturas}
+              extra={painel.kpis.reembolsos ? `${inteiro(painel.kpis.reembolsos)} reembolsada(s) no período, fora da receita` : undefined}
+            />
             <CartaoKpi titulo="Ticket médio" valor={moeda(painel.kpis.ticketMedio)} atual={painel.kpis.ticketMedio} anterior={painel.anterior.ticketMedio} />
             <CartaoKpi titulo="Novos clientes" valor={inteiro(painel.kpis.novosClientes)} atual={painel.kpis.novosClientes} anterior={painel.anterior.novosClientes} />
             <CartaoKpi titulo="Testes iniciados" valor={inteiro(painel.kpis.testes)} atual={painel.kpis.testes} anterior={painel.anterior.testes} />

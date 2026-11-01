@@ -1,6 +1,7 @@
 import { obrigatoria } from './config.js'
 import { blocoChave, blocoGerenciador, enviarEmail, escapar, formatarVencimento } from './email.js'
 import type { ContaGerenciador } from './gerenciador.js'
+import { PRAZO_ARREPENDIMENTO_DIAS } from './reembolso.js'
 
 export interface EmailCompra {
   para: string
@@ -9,6 +10,15 @@ export interface EmailCompra {
   conta?: ContaGerenciador
   /** chave nova (cliente sem chave); null = cliente já tem chave e continua com ela */
   chave: string | null
+}
+
+/** Direito de arrependimento: prazo contado da aprovação (hoje, no envio deste e-mail). */
+function politicaCancelamento(agora = new Date()): string {
+  const ate = formatarVencimento(new Date(agora.getTime() + PRAZO_ARREPENDIMENTO_DIAS * 86_400_000))
+  return (
+    `você pode desistir em até ${PRAZO_ARREPENDIMENTO_DIAS} dias (até ${ate}) e recebe 100% do valor de volta — ` +
+    'é só responder este e-mail ou falar com o suporte. Depois desse prazo, a licença anual não tem reembolso.'
+  )
 }
 
 export function montarEmailCompra({ para, nome, licencaAte, conta, chave }: EmailCompra, link: string) {
@@ -32,6 +42,8 @@ export function montarEmailCompra({ para, nome, licencaAte, conta, chave }: Emai
     '',
     ...gerenciador.texto,
     '',
+    `Cancelamento: ${politicaCancelamento()}`,
+    '',
     'Obrigado pela confiança e bons trades!',
     'Equipe Megan',
   ].join('\n')
@@ -51,6 +63,7 @@ export function montarEmailCompra({ para, nome, licencaAte, conta, chave }: Emai
     <p>Se você já usa a Megan, basta abrir o programa: a licença é atualizada sozinha.</p>
     ${ativacao.html}
     ${gerenciador.html}
+    <p style="color:#374151;font-size:13px"><b>Cancelamento:</b> ${escapar(politicaCancelamento())}</p>
     <p style="color:#6b7280;font-size:12px">Operações em renda variável envolvem risco. Resultados passados não garantem resultados futuros.</p>
   </div>`
   return { assunto: 'Sua licença anual da Megan N18 está ativa', texto, html }

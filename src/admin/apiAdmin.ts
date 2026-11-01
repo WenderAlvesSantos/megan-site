@@ -21,6 +21,14 @@ export interface ClienteAdmin extends ClienteLinha {
   vinculadaEm: string | null
   ultimaConsulta: string | null
   gerenciadorConfigEm: string | null
+  compra: {
+    valor: number
+    pagaEm: string
+    arrependimentoAte: string
+    podeReembolsar: boolean
+    reembolsadaEm: string | null
+    reembolsoOrigem: string | null
+  } | null
   eventos: { tipo: string; em: string; detalhe?: string }[]
 }
 
@@ -38,6 +46,7 @@ export interface Kpis {
   novosClientes: number
   testes: number
   conversao: number | null
+  reembolsos: number
 }
 
 export interface Balde {
@@ -88,6 +97,9 @@ export const carregarPainel = (senha: string, filtros: { de: string; ate: string
 
 export const novaChave = (senha: string, email: string) =>
   acao<{ ok: true; chave: string; emailEnviado: boolean }>(senha, { acao: 'nova-chave', email })
+
+export const reembolsar = (senha: string, email: string) =>
+  acao<{ ok: true; licencaAte: string; emailEnviado: boolean }>(senha, { acao: 'reembolsar', email })
 
 export const configGerenciadorCliente = (senha: string, email: string) =>
   acao<{ status: 'aplicado' | 'ja_tinha' | 'sem_conta' }>(senha, { acao: 'config-gerenciador-cliente', email })

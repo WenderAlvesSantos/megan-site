@@ -1,5 +1,5 @@
 import { useEffect } from 'react'
-import { PARCELAS_ANUAL, PRECO_ANUAL, precoFormatado } from '../oferta'
+import { DIAS_ARREPENDIMENTO, PARCELAS_ANUAL, POLITICA_CANCELAMENTO, PRECO_ANUAL, precoFormatado } from '../oferta'
 import FormCompra from './FormCompra'
 import StatusCompra from './StatusCompra'
 
@@ -9,6 +9,7 @@ const INCLUSO = [
   'Megan Trade Manager para gerenciar sua banca',
   'Liberação automática assim que o pagamento é aprovado',
   'Renovou antes de vencer? O novo ano é somado ao que falta',
+  `${DIAS_ARREPENDIMENTO} dias para desistir com reembolso total`,
   'Suporte pelo WhatsApp',
 ]
 
@@ -47,6 +48,10 @@ export default function PaginaCompra() {
                 <li key={i}>{i}</li>
               ))}
             </ul>
+            <p className="texto-apoio">
+              <b>Cancelamento:</b> {POLITICA_CANCELAMENTO} Para desistir, responda o e-mail de confirmação da compra ou
+              fale com o suporte pelo WhatsApp.
+            </p>
           </div>
           <div className="cartao-form">{compraId ? <StatusCompra id={compraId} /> : <FormCompra />}</div>
         </div>

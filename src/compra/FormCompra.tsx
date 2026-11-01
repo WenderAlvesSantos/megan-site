@@ -2,7 +2,7 @@ import { useState, type FormEvent } from 'react'
 import { iniciarCheckout, type DadosCadastro } from '../api'
 import { CONTATO_VAZIO } from '../Cadastro'
 import CamposContato from '../CamposContato'
-import { PRECO_ANUAL, precoFormatado } from '../oferta'
+import { DIAS_ARREPENDIMENTO, PRECO_ANUAL, precoFormatado } from '../oferta'
 
 export default function FormCompra() {
   const [dados, setDados] = useState<DadosCadastro>(CONTATO_VAZIO)
@@ -35,7 +35,7 @@ export default function FormCompra() {
       <CamposContato
         dados={dados}
         alterar={alterar}
-        textoAceite="Li e aceito os termos de uso da Megan N18: a licença é pessoal, vale por 12 meses e operações no mercado envolvem risco."
+        textoAceite={`Li e aceito os termos de uso da Megan N18: a licença é pessoal, vale por 12 meses e operações no mercado envolvem risco. Posso desistir em até ${DIAS_ARREPENDIMENTO} dias com reembolso total; depois disso, não há reembolso.`}
       />
       {erro && <p className="erro">{erro}</p>}
       <button type="submit" className="btn btn-largo" disabled={enviando}>

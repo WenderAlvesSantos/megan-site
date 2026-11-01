@@ -29,7 +29,7 @@ export interface UsuarioMegan {
 
 export interface EventoLicenca {
   email: string
-  tipo: 'chave_gerada' | 'ativada' | 'outra_maquina' | 'chave_invalida'
+  tipo: 'chave_gerada' | 'ativada' | 'outra_maquina' | 'chave_invalida' | 'reembolso'
   em: Date
   maquina?: string
   detalhe?: string
@@ -42,13 +42,16 @@ export interface CompraMegan {
   phone: string
   plano: 'anual'
   valor: number
-  status: 'pendente' | 'aprovada'
+  status: 'pendente' | 'aprovada' | 'reembolsada'
   criadaEm: Date
   preferenciaId?: string
   pagamentoId?: string
   /** preenchido uma única vez, ao liberar a licença (trava contra webhook repetido) */
   aplicadaEm?: Date
   licencaAte?: Date
+  /** estorno feito (arrependimento pelo suporte, ou estorno/contestação direto no Mercado Pago) */
+  reembolsadaEm?: Date
+  reembolsoOrigem?: 'suporte' | 'mercadopago'
 }
 
 // Reaproveitada entre invocações da mesma instância serverless.

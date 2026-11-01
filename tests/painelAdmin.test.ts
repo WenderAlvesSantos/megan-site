@@ -61,7 +61,13 @@ describe('montarPainel', () => {
   const p = montarPainel(usuarios, compras, { de: '2026-10-01', ate: '2026-10-31', agrupar: 'semana' }, AGORA)
 
   it('receita, assinaturas, ticket, novos clientes, testes e conversão do período', () => {
-    expect(p.kpis).toEqual({ receita: 1599, assinaturas: 1, ticketMedio: 1599, novosClientes: 3, testes: 3, conversao: 1 / 3 })
+    expect(p.kpis).toEqual({ receita: 1599, assinaturas: 1, ticketMedio: 1599, novosClientes: 3, testes: 3, conversao: 1 / 3, reembolsos: 0 })
+  })
+
+  it('compra reembolsada sai da receita e das assinaturas e conta como reembolso', () => {
+    const estornada = { ...compra('t1-pagou@x.com', '2026-10-25T13:00:00Z'), reembolsadaEm: d('2026-10-27T13:00:00Z') }
+    const r = montarPainel(usuarios, [estornada], { de: '2026-10-01', ate: '2026-10-31', agrupar: 'semana' }, AGORA)
+    expect(r.kpis).toMatchObject({ receita: 0, assinaturas: 0, reembolsos: 1, conversao: 0 })
   })
 
   it('compara com o período anterior do mesmo tamanho', () => {

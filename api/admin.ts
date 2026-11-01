@@ -8,6 +8,8 @@ import {
   type DepsAdmin,
 } from '../lib/admin.js'
 import { dadosPainel, depsConfigGerenciador, detalheCliente, listarClientes } from '../lib/adminDados.js'
+import { depsReembolsoReais } from '../lib/compraDeps.js'
+import { reembolsarCompra } from '../lib/reembolso.js'
 import { enviarEmailChave } from '../lib/emailChave.js'
 import { colecaoUsuarios, registrarEvento } from '../lib/mongo.js'
 import { normalizarEmail } from '../lib/validacao.js'
@@ -57,6 +59,11 @@ async function responderPost(req: VercelRequest, res: VercelResponse) {
     case 'config-gerenciador':
       res.status(200).json(await aplicarConfigGerenciador(await depsConfigGerenciador()))
       return
+    case 'reembolsar': {
+      const r = await reembolsarCompra(email, await depsReembolsoReais())
+      res.status(r.ok ? 200 : 409).json(r)
+      return
+    }
     case 'config-gerenciador-cliente':
       if (!(await detalheCliente(email))) {
         res.status(404).json({ erro: 'Cliente não encontrado.' })

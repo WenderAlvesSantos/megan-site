@@ -41,11 +41,14 @@ export async function listarClientes(q: Record<string, unknown>): Promise<Pagina
 }
 
 export async function detalheCliente(email: string): Promise<ClienteAdmin | null> {
-  const [usuarios, eventos] = await Promise.all([colecaoUsuarios(), colecaoEventos()])
+  const [usuarios, eventos, compras] = await Promise.all([colecaoUsuarios(), colecaoEventos(), colecaoCompras()])
   const u = await usuarios.findOne({ email })
   if (!u) return null
-  const evs = await eventos.find({ email }).sort({ em: -1 }).limit(10).toArray()
-  return resumoCliente(u, evs, new Date())
+  const [evs, compra] = await Promise.all([
+    eventos.find({ email }).sort({ em: -1 }).limit(10).toArray(),
+    compras.findOne({ email, aplicadaEm: { $exists: true } }, { sort: { aplicadaEm: -1 } }),
+  ])
+  return resumoCliente(u, evs, new Date(), compra)
 }
 
 const CAMPOS_PAINEL = { email: 1, name: 1, active: 1, plan: 1, createdAt: 1, trialStartedAt: 1, trialEndsAt: 1, licenseEndsAt: 1 }
@@ -55,7 +58,9 @@ export async function dadosPainel(q: Record<string, unknown>): Promise<Painel> {
   const agora = new Date()
   const [listaUsuarios, pagas] = await Promise.all([
     usuarios.find({}, { projection: CAMPOS_PAINEL }).toArray(),
-    compras.find({ aplicadaEm: { $exists: true } }, { projection: { email: 1, valor: 1, aplicadaEm: 1 } }).toArray(),
+    compras
+      .find({ aplicadaEm: { $exists: true } }, { projection: { email: 1, valor: 1, aplicadaEm: 1, reembolsadaEm: 1 } })
+      .toArray(),
   ])
   return montarPainel(listaUsuarios, pagas, lerPeriodo(q, agora), agora)
 }
