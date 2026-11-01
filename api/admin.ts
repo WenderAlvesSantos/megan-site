@@ -1,6 +1,15 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node'
-import { adminAutorizado, emitirNovaChave, gerarChavesFaltantes, resumoCliente, type DepsAdmin } from '../lib/admin.js'
+import {
+  adminAutorizado,
+  aplicarConfigGerenciador,
+  emitirNovaChave,
+  gerarChavesFaltantes,
+  resumoCliente,
+  type DepsAdmin,
+  type DepsConfigGerenciador,
+} from '../lib/admin.js'
 import { enviarEmailChave } from '../lib/emailChave.js'
+import { configurarGerenciador } from '../lib/gerenciador.js'
 import { colecaoEventos, colecaoUsuarios, registrarEvento } from '../lib/mongo.js'
 import { normalizarEmail } from '../lib/validacao.js'
 
@@ -18,6 +27,20 @@ async function deps(): Promise<DepsAdmin> {
     semChave: () => usuarios.find({ licenseKeyHash: { $exists: false }, active: true }).limit(500).toArray(),
     enviarEmailChave,
     evento: registrarEvento,
+  }
+}
+
+async function depsConfigGerenciador(): Promise<DepsConfigGerenciador> {
+  const usuarios = await colecaoUsuarios()
+  const semConfig = { gerenciadorConfigAt: { $exists: false } }
+  return {
+    pendentes: async (limite) =>
+      (await usuarios.find(semConfig, { projection: { email: 1 } }).sort({ createdAt: 1 }).limit(limite).toArray()).map((u) => u.email),
+    contarPendentes: () => usuarios.countDocuments(semConfig),
+    configurar: configurarGerenciador,
+    marcar: async (emails) => {
+      await usuarios.updateMany({ email: { $in: emails } }, { $set: { gerenciadorConfigAt: new Date() } })
+    },
   }
 }
 
@@ -65,6 +88,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
     if (corpo.acao === 'gerar-faltantes') {
       res.status(200).json(await gerarChavesFaltantes(await deps()))
+      return
+    }
+    if (corpo.acao === 'config-gerenciador') {
+      res.status(200).json(await aplicarConfigGerenciador(await depsConfigGerenciador()))
       return
     }
     res.status(400).json({ erro: 'Ação desconhecida.' })

@@ -2,6 +2,7 @@ import { createHash, timingSafeEqual } from 'node:crypto'
 import { camposNovaChave } from './ativacao.js'
 import { gerarChave } from './chave.js'
 import type { EmailChave, MotivoChave } from './emailChave.js'
+import type { ResultadoConfigGerenciador } from './gerenciador.js'
 import { avaliarLicenca } from './licenca.js'
 import type { EventoLicenca, UsuarioMegan } from './mongo.js'
 
@@ -84,6 +85,31 @@ export async function emitirNovaChave(email: string, motivo: MotivoChave, deps: 
 }
 
 export const LOTE_MIGRACAO = 25
+
+export interface DepsConfigGerenciador {
+  /** Clientes ainda não passados pela rotina (sem `gerenciadorConfigAt`), até `limite`. */
+  pendentes: (limite: number) => Promise<string[]>
+  contarPendentes: () => Promise<number>
+  configurar: (emails: string[]) => Promise<ResultadoConfigGerenciador>
+  marcar: (emails: string[]) => Promise<void>
+}
+
+export interface ResumoConfigGerenciador {
+  aplicados: number
+  jaTinham: number
+  semConta: string[]
+  restantes: number
+}
+
+/** Clientes antigos, um lote por chamada: cria a configuração da Megan no trade-manager de quem ainda não tem. */
+export async function aplicarConfigGerenciador(deps: DepsConfigGerenciador): Promise<ResumoConfigGerenciador> {
+  const lote = await deps.pendentes(LOTE_MIGRACAO)
+  if (lote.length === 0) return { aplicados: 0, jaTinham: 0, semConta: [], restantes: 0 }
+  const r = await deps.configurar(lote)
+  // Sem conta no gerenciador também sai da fila: ao criar a conta ela já nasce configurada.
+  await deps.marcar(lote)
+  return { aplicados: r.aplicados.length, jaTinham: r.jaTinham.length, semConta: r.semConta, restantes: await deps.contarPendentes() }
+}
 
 /** Um lote por chamada (limite de tempo da função); a página repete enquanto houver `restantes`. */
 export async function gerarChavesFaltantes(

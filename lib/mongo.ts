@@ -20,6 +20,8 @@ export interface UsuarioMegan {
   machineId?: string
   machineBoundAt?: Date
   lastCheckAt?: Date
+  /** quando o /admin passou este cliente pela rotina de configuração da Megan no trade-manager */
+  gerenciadorConfigAt?: Date
   createdAt: Date
   updatedAt?: Date
   source?: string

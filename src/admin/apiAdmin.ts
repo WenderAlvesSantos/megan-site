@@ -38,6 +38,12 @@ export const novaChave = (senha: string, email: string) =>
     body: JSON.stringify({ acao: 'nova-chave', email }),
   })
 
+export const configGerenciador = (senha: string) =>
+  chamar<{ aplicados: number; jaTinham: number; semConta: string[]; restantes: number }>(senha, {
+    method: 'POST',
+    body: JSON.stringify({ acao: 'config-gerenciador' }),
+  })
+
 export const gerarFaltantes = (senha: string) =>
   chamar<{ geradas: number; restantes: number; semEmail: string[] }>(senha, {
     method: 'POST',

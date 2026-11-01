@@ -1,5 +1,5 @@
 import { useEffect, useState, type FormEvent } from 'react'
-import { buscarClientes, ErroAdmin, gerarFaltantes, type ClienteAdmin } from './apiAdmin'
+import { buscarClientes, configGerenciador, ErroAdmin, gerarFaltantes, type ClienteAdmin } from './apiAdmin'
 import CartaoCliente from './CartaoCliente'
 
 const CHAVE_SESSAO = 'megan-admin'
@@ -61,6 +61,32 @@ export default function PaginaAdmin() {
     }
   }
 
+  async function configurarGerenciador() {
+    if (!window.confirm('Aplicar a configuração da Megan (WIN Real + Simulador) no trade-manager dos clientes que ainda não têm? Configurações existentes não são alteradas.')) return
+    setOcupado(true)
+    let aplicados = 0
+    let jaTinham = 0
+    const semConta: string[] = []
+    try {
+      for (;;) {
+        const r = await configGerenciador(senha)
+        aplicados += r.aplicados
+        jaTinham += r.jaTinham
+        semConta.push(...r.semConta)
+        setAviso(`Trade-manager: ${aplicados} configurado(s)... faltam ${r.restantes}`)
+        if (r.restantes <= 0 || r.aplicados + r.jaTinham + r.semConta.length === 0) break
+      }
+      setAviso(
+        `Trade-manager: ${aplicados} cliente(s) configurado(s), ${jaTinham} já tinham configuração` +
+          (semConta.length ? `, ${semConta.length} sem conta no trade-manager.` : '.'),
+      )
+    } catch (e) {
+      setAviso(`Erro após ${aplicados} cliente(s): ${(e as Error).message}`)
+    } finally {
+      setOcupado(false)
+    }
+  }
+
   if (!senha) {
     return (
       <main className="secao admin">
@@ -100,6 +126,9 @@ export default function PaginaAdmin() {
           <button type="submit" className="btn" disabled={ocupado}>Buscar</button>
           <button type="button" className="btn btn-fantasma" onClick={migrar} disabled={ocupado}>
             Gerar chaves para quem não tem
+          </button>
+          <button type="button" className="btn btn-fantasma" onClick={configurarGerenciador} disabled={ocupado}>
+            Configurar trade-manager dos clientes antigos
           </button>
           <button
             type="button"
