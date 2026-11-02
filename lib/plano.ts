@@ -7,8 +7,7 @@ export const PLANO_ANUAL = {
   descricao: 'Licença de 1 ano do robô Megan N18 para MetaTrader 5 no mini-índice (WIN)',
   /** Categoria de item do Mercado Pago (produto digital); melhora a análise antifraude. */
   categoria: 'virtual_goods',
-  // TEMPORÁRIO (teste de compra real): voltar para 1599 antes de vender.
-  preco: 1,
+  preco: 1599,
   parcelas: 12,
 } as const
 
