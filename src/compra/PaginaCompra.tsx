@@ -42,7 +42,13 @@ export default function PaginaCompra() {
             <p className="preco">
               {precoFormatado(PRECO_ANUAL)} <small>por 12 meses</small>
             </p>
-            <p className="texto-apoio">Pix ou cartão de crédito em até {PARCELAS_ANUAL}x pelo Mercado Pago.</p>
+            <div className="selo-mp">
+              <img src="/img/mercadopago.svg" alt="Mercado Pago" width={40} height={40} />
+              <div>
+                <strong>Pagamento seguro pelo Mercado Pago</strong>
+                <span>Pix, saldo do Mercado Pago ou cartão de crédito em até {PARCELAS_ANUAL}x.</span>
+              </div>
+            </div>
             <ul className="lista-check">
               {INCLUSO.map((i) => (
                 <li key={i}>{i}</li>

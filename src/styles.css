@@ -549,6 +549,31 @@ input:focus {
   font-weight: 800;
 }
 
+.selo-mp {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 0 0 24px;
+  padding: 10px 14px;
+  border: 1px solid rgba(0, 177, 234, 0.35);
+  border-radius: 12px;
+  background: rgba(0, 177, 234, 0.08);
+}
+
+.selo-mp img {
+  flex-shrink: 0;
+}
+
+.selo-mp strong,
+.selo-mp span {
+  display: block;
+}
+
+.selo-mp span {
+  color: var(--suave);
+  font-size: 0.92rem;
+}
+
 .preco small {
   font-size: 1rem;
   font-weight: 600;
