@@ -1,11 +1,13 @@
 import { createHmac } from 'node:crypto'
 import { describe, expect, it } from 'vitest'
 import { avaliarLicenca } from '../lib/licenca.js'
-import { assinaturaWebhookValida, montarPreferencia } from '../lib/mercadopago.js'
+import { assinaturaWebhookValida, montarPreferencia, telefoneMP } from '../lib/mercadopago.js'
 
 describe('montarPreferencia', () => {
   it('cobra R$ 1.599 em até 12x, só Pix e cartão de crédito, e volta para /comprar', () => {
-    const p = montarPreferencia({ compraId: 'abc', nome: 'Maria da Silva', email: 'm@x.com', siteUrl: 'https://megan.com' })
+    const p = montarPreferencia({
+      compraId: 'abc', nome: 'Maria da Silva', email: 'm@x.com', telefone: '11987654321', siteUrl: 'https://megan.com',
+    })
     expect(p.items[0]).toMatchObject({ unit_price: 1599, currency_id: 'BRL', quantity: 1 })
     expect(p.payment_methods.installments).toBe(12)
     const excluidos = p.payment_methods.excluded_payment_types.map((t) => t.id)
@@ -16,6 +18,25 @@ describe('montarPreferencia', () => {
     expect(p.back_urls.success).toBe('https://megan.com/comprar?compra=abc')
     expect(p.notification_url).toBe('https://megan.com/api/mercadopago')
     expect(p.payer).toMatchObject({ name: 'Maria', surname: 'da Silva' })
+  })
+
+  it('envia descrição, categoria e telefone do comprador (qualidade da integração no Mercado Pago)', () => {
+    const p = montarPreferencia({
+      compraId: 'abc', nome: 'Maria da Silva', email: 'm@x.com', telefone: '11987654321', siteUrl: 'https://megan.com',
+    })
+    expect(p.items[0].description).toContain('Megan N18')
+    expect(p.items[0].category_id).toBe('virtual_goods')
+    expect(p.payer.phone).toEqual({ area_code: '11', number: '987654321' })
+  })
+})
+
+describe('telefoneMP', () => {
+  it('separa o DDD, tira o 55 do país e ignora número inválido', () => {
+    expect(telefoneMP('1133334444')).toEqual({ area_code: '11', number: '33334444' })
+    expect(telefoneMP('5511987654321')).toEqual({ area_code: '11', number: '987654321' })
+    expect(telefoneMP('551133334444')).toEqual({ area_code: '11', number: '33334444' })
+    expect(telefoneMP('123')).toBeUndefined()
+    expect(telefoneMP('')).toBeUndefined()
   })
 })
 

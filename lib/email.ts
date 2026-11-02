@@ -1,5 +1,5 @@
 import { Resend } from 'resend'
-import { obrigatoria } from './config.js'
+import { config, obrigatoria } from './config.js'
 import type { ContaGerenciador } from './gerenciador.js'
 
 export interface EmailTeste {
@@ -65,11 +65,28 @@ export function blocoGerenciador(conta: ContaGerenciador | undefined, para: stri
   }
 }
 
-export function montarEmailTeste({ nome, venceEm, para, conta, chave }: EmailTeste, link: string) {
+/** Grupo de suporte no Telegram; sem link configurado, o bloco não aparece. */
+export function blocoTelegram(url: string) {
+  const link = url.trim()
+  if (!link) return { texto: [] as string[], html: '' }
+  const titulo = 'Suporte e comunidade no Telegram'
+  const aviso = 'Entre no grupo da Megan para tirar dúvidas, receber avisos e falar com o suporte.'
+  return {
+    texto: [titulo, aviso, `Grupo: ${link}`, ''],
+    html: `<h3>${titulo}</h3>
+    <p>${aviso}</p>
+    <p style="margin:16px 0">
+      <a href="${escapar(link)}" style="background:#229ed9;color:#fff;padding:10px 18px;border-radius:8px;text-decoration:none;font-weight:bold">Entrar no grupo do Telegram</a>
+    </p>`,
+  }
+}
+
+export function montarEmailTeste({ nome, venceEm, para, conta, chave }: EmailTeste, link: string, telegram = '') {
   const primeiro = nome.split(' ')[0]
   const vence = formatarVencimento(venceEm)
   const gerenciador = blocoGerenciador(conta, para)
   const ativacao = blocoChave(chave)
+  const grupo = blocoTelegram(telegram)
   const texto = [
     `Olá, ${primeiro}!`,
     '',
@@ -86,6 +103,7 @@ export function montarEmailTeste({ nome, venceEm, para, conta, chave }: EmailTes
     '',
     ...gerenciador.texto,
     '',
+    ...grupo.texto,
     'Bons trades!',
     'Equipe Megan',
   ].join('\n')
@@ -105,6 +123,7 @@ export function montarEmailTeste({ nome, venceEm, para, conta, chave }: EmailTes
     ${ativacao.html}
     <p>Comece em modo simulado (PAPER/Replay) até se sentir seguro.</p>
     ${gerenciador.html}
+    ${grupo.html}
     <p style="color:#6b7280;font-size:12px">Operações em renda variável envolvem risco. Resultados passados não garantem resultados futuros.</p>
   </div>`
   return { assunto: 'Seu teste da Megan N18 está liberado', texto, html }
@@ -123,5 +142,5 @@ export async function enviarEmail(para: string, m: { assunto: string; texto: str
 }
 
 export async function enviarEmailTeste(dados: EmailTeste): Promise<void> {
-  await enviarEmail(dados.para, montarEmailTeste(dados, obrigatoria('DOWNLOAD_URL')))
+  await enviarEmail(dados.para, montarEmailTeste(dados, obrigatoria('DOWNLOAD_URL'), config.grupoTelegram()))
 }

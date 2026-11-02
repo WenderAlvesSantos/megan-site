@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { configGerenciadorCliente, detalheCliente, novaChave, reembolsar, type ClienteAdmin } from './apiAdmin'
 import { data, dataHora, moeda } from './formato'
+import { mascararTelefone } from '../telefone'
 import SeloStatus from './SeloStatus'
 
 const EVENTOS: Record<string, string> = {
@@ -101,7 +102,7 @@ export default function ModalCliente({ senha, email, onFechar, onAtualizar }: Pr
             <h2>{c?.nome || (c ? '(sem nome)' : 'Carregando...')}</h2>
             <p>
               {email}
-              {c?.telefone ? ` · ${c.telefone}` : ''}
+              {c?.telefone ? ` · ${mascararTelefone(c.telefone)}` : ''}
             </p>
           </div>
           {c && <SeloStatus status={c.status} />}

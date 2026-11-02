@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { gerarChave } from '../lib/chave.js'
 import type { TradeGerenciador } from '../lib/gerenciador.js'
-import { lancarTrade, validarTrade, type DepsLancamento } from '../lib/lancamentoTrade.js'
+import { LICENCA_FORA_DO_PRAZO, lancarTrade, validarTrade, type DepsLancamento } from '../lib/lancamentoTrade.js'
 import type { UsuarioMegan } from '../lib/mongo.js'
 
 const PC1 = 'a'.repeat(64)
@@ -57,6 +57,33 @@ describe('lancarTrade', () => {
       expect(await lancarTrade('ana@x.com', c, m, TRADE, d)).toMatchObject({ ok: false, status: 'recusado' })
       expect(enviados).toHaveLength(0)
     }
+  })
+
+  it('trade do último dia do teste é aceito mesmo enviado depois do vencimento', async () => {
+    const { d, enviados } = deps(cliente({ trialEndsAt: new Date('2026-10-30T21:30:00Z') }))
+    expect(await lancarTrade('ana@x.com', chave, PC1, TRADE, d)).toEqual({ ok: true, status: 'criado' })
+    expect(enviados).toHaveLength(1)
+  })
+
+  it('trade com data depois do vencimento ou de conta desativada é recusado', async () => {
+    for (const u of [
+      cliente({ trialEndsAt: new Date('2026-10-29T21:30:00Z') }),
+      cliente({ plan: 'anual', licenseEndsAt: new Date('2026-10-29T21:30:00Z') }),
+      cliente({ active: false }),
+    ]) {
+      const { d, enviados } = deps(u)
+      expect(await lancarTrade('ana@x.com', chave, PC1, TRADE, d)).toEqual({
+        ok: false,
+        status: 'recusado',
+        mensagem: LICENCA_FORA_DO_PRAZO,
+      })
+      expect(enviados).toHaveLength(0)
+    }
+  })
+
+  it('o dia do vencimento segue o calendário de São Paulo', async () => {
+    const { d } = deps(cliente({ trialEndsAt: new Date('2026-10-31T01:00:00Z') }))
+    expect(await lancarTrade('ana@x.com', chave, PC1, TRADE, d)).toMatchObject({ ok: true })
   })
 
   it('trade inválido nem consulta o banco', async () => {

@@ -2,7 +2,8 @@
 export const DIAS_TESTE = 10
 
 /** Só para exibição — deve ser igual a PLANO_ANUAL em lib/plano.ts (a API cobra e confere por lá) */
-export const PRECO_ANUAL = 1599
+// TEMPORÁRIO (teste de compra real): voltar para 1599 antes de vender.
+export const PRECO_ANUAL = 1
 export const PARCELAS_ANUAL = 12
 
 /** Deve ser igual a PRAZO_ARREPENDIMENTO_DIAS em lib/reembolso.ts (direito de arrependimento, CDC art. 49) */

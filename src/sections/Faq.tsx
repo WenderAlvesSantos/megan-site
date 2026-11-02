@@ -27,7 +27,7 @@ const PERGUNTAS = [
   },
   {
     p: 'Funciona em qual corretora?',
-    r: 'Em corretoras que ofereçam o MetaTrader 5 para o mini-índice (WIN) com negociação por robô (Algo Trading) liberada. Na dúvida, chame no WhatsApp que ajudamos.',
+    r: 'Em corretoras que ofereçam o MetaTrader 5 para o mini-índice (WIN) com negociação por robô (Algo Trading) liberada. Na dúvida, chame no grupo do Telegram que ajudamos.',
   },
 ]
 

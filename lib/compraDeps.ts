@@ -20,7 +20,7 @@ export async function depsCheckoutReais(): Promise<DepsCheckout> {
       await compras.insertOne(c)
     },
     criarPreferencia: (c) =>
-      criarPreferencia({ compraId: c._id, nome: c.name, email: c.email, siteUrl: config.siteUrl() }),
+      criarPreferencia({ compraId: c._id, nome: c.name, email: c.email, telefone: c.phone, siteUrl: config.siteUrl() }),
     registrarPreferencia: async (id, preferenciaId) => {
       await compras.updateOne({ _id: id }, { $set: { preferenciaId } })
     },

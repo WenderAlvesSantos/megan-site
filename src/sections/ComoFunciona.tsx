@@ -3,7 +3,7 @@ import { DIAS_TESTE } from '../oferta'
 const PASSOS = [
   {
     titulo: 'Cadastre-se',
-    texto: `Preencha nome, e-mail e WhatsApp. O teste de ${DIAS_TESTE} dias úteis é liberado na hora, sem cartão.`,
+    texto: `Preencha nome, e-mail e celular. O teste de ${DIAS_TESTE} dias úteis é liberado na hora, sem cartão.`,
   },
   {
     titulo: 'Baixe e abra',

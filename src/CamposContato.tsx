@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react'
 import type { DadosCadastro } from './api'
+import { mascararTelefone } from './telefone'
 
 interface Props {
   dados: DadosCadastro
@@ -26,13 +27,15 @@ export default function CamposContato({ dados, alterar, textoAceite }: Props) {
         <small>Você vai usar este e-mail para entrar na Megan N18.</small>
       </label>
       <label>
-        WhatsApp (com DDD)
+        Celular (com DDD)
         <input
           type="tel"
+          inputMode="numeric"
           value={dados.telefone}
-          onChange={(e) => alterar('telefone', e.target.value)}
-          autoComplete="tel"
+          onChange={(e) => alterar('telefone', mascararTelefone(e.target.value))}
+          autoComplete="tel-national"
           placeholder="(11) 91234-5678"
+          maxLength={15}
           required
         />
       </label>

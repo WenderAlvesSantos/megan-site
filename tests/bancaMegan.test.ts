@@ -11,10 +11,10 @@ const BANCA: BancaGerenciador = {
   maxContracts: 150, stopCostPerContract: 62.88, protecting: false,
 }
 
-function cliente(): UsuarioMegan {
+function cliente(extra: Partial<UsuarioMegan> = {}): UsuarioMegan {
   return {
     name: 'Ana', email: 'ana@x.com', active: true, contract: 50, createdAt: new Date('2026-10-01'),
-    plan: 'anual', licenseKeyHash: hash, machineId: PC1,
+    plan: 'anual', licenseKeyHash: hash, machineId: PC1, ...extra,
   }
 }
 
@@ -69,6 +69,21 @@ describe('bancaMegan', () => {
     for (const [c, m] of [[chave, 'b'.repeat(64)], [gerarChave().chave, PC1]] as const) {
       const { d, pedidos } = deps(cliente())
       expect(await bancaMegan('ana@x.com', c, m, { accountType: 'REAL', banca: 1 }, d)).toMatchObject({ ok: false, status: 'recusado' })
+      expect(pedidos).toHaveLength(0)
+    }
+  })
+
+  it('licença vencida ou conta desativada não lê nem altera a banca, com a mensagem do bot', async () => {
+    const agora = new Date('2026-11-10T13:00:00Z')
+    for (const [u, trecho] of [
+      [cliente({ licenseEndsAt: new Date('2026-11-01T00:00:00Z') }), 'Renove para continuar'],
+      [cliente({ plan: 'trial', trialEndsAt: new Date('2026-11-09T21:30:00Z') }), 'teste gratuito terminou'],
+      [cliente({ active: false }), 'Conta desativada'],
+    ] as const) {
+      const { d, pedidos } = deps(u)
+      const r = await bancaMegan('ana@x.com', chave, PC1, { accountType: 'REAL', banca: 1 }, d, agora)
+      expect(r).toMatchObject({ ok: false, status: 'recusado' })
+      expect(r.ok ? '' : r.mensagem).toContain(trecho)
       expect(pedidos).toHaveLength(0)
     }
   })

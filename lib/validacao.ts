@@ -27,7 +27,7 @@ export function validarCadastro(
   const telefone = String(c.telefone ?? '').replace(/\D/g, '')
   if (nome.length < 3 || nome.length > 80) return { ok: false, mensagem: 'Informe seu nome completo.' }
   if (!emailValido(email)) return { ok: false, mensagem: 'Informe um e-mail válido.' }
-  if (telefone.length < 10 || telefone.length > 13) return { ok: false, mensagem: 'Informe um WhatsApp válido com DDD.' }
+  if (telefone.length < 10 || telefone.length > 13) return { ok: false, mensagem: 'Informe um celular válido com DDD.' }
   if (c.aceite !== true) return { ok: false, mensagem: mensagemAceite }
   return { ok: true, dados: { nome, email, telefone } }
 }

@@ -17,7 +17,7 @@ export default function SecaoTeste() {
             <li>Megan Trade Manager para gerenciar sua banca</li>
             <li>Liberação automática, na hora</li>
             <li>Sem cartão de crédito</li>
-            <li>Suporte pelo WhatsApp</li>
+            <li>Suporte no grupo do Telegram</li>
           </ul>
         </div>
         <div className="cartao-form">

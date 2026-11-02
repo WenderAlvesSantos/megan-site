@@ -1,5 +1,6 @@
 import type { BancaGerenciador, ContaTipo, MudancasBanca } from './gerenciador.js'
 import { LICENCA_NAO_CONFERE, licencaConfere } from './lancamentoTrade.js'
+import { avaliarLicenca } from './licenca.js'
 import type { UsuarioMegan } from './mongo.js'
 
 export interface DepsBanca {
@@ -40,12 +41,16 @@ export async function bancaMegan(
   maquina: string,
   corpo: Record<string, unknown>,
   deps: DepsBanca,
+  agora = new Date(),
 ): Promise<ResultadoBanca> {
   const pedido = validarPedidoBanca(corpo)
   if (!pedido) return { ok: false, status: 'invalido', mensagem: 'Informe uma banca válida.' }
-  if (!licencaConfere(await deps.buscar(email), chave, maquina)) {
+  const u = await deps.buscar(email)
+  if (!licencaConfere(u, chave, maquina)) {
     return { ok: false, status: 'recusado', mensagem: LICENCA_NAO_CONFERE }
   }
+  const licenca = avaliarLicenca(u, agora)
+  if (!licenca.ok) return { ok: false, status: 'recusado', mensagem: licenca.mensagem }
   const { conta, ...mudancas } = pedido
   const r = await deps.consultar(email, conta, mudancas)
   return r === 'sem_usuario' ? { ok: true, status: 'sem_usuario' } : { ok: true, status: 'ok', banca: r }

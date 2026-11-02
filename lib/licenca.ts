@@ -13,7 +13,7 @@ export interface ResultadoLicenca {
 /** O teste gratuito opera sempre com 1 contrato, inclusive quem foi cadastrado com outro valor. */
 export const CONTRATOS_TESTE = 1
 
-function vencimento(u: UsuarioMegan): Date | null {
+export function vencimento(u: UsuarioMegan): Date | null {
   const d = u.plan === 'anual' ? u.licenseEndsAt : u.plan === 'trial' ? u.trialEndsAt : undefined
   return d ? new Date(d) : null
 }

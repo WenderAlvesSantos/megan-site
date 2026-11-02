@@ -10,7 +10,7 @@ const INCLUSO = [
   'Liberação automática assim que o pagamento é aprovado',
   'Renovou antes de vencer? O novo ano é somado ao que falta',
   `${DIAS_ARREPENDIMENTO} dias para desistir com reembolso total`,
-  'Suporte pelo WhatsApp',
+  'Suporte no grupo do Telegram',
 ]
 
 export default function PaginaCompra() {
@@ -50,7 +50,7 @@ export default function PaginaCompra() {
             </ul>
             <p className="texto-apoio">
               <b>Cancelamento:</b> {POLITICA_CANCELAMENTO} Para desistir, responda o e-mail de confirmação da compra ou
-              fale com o suporte pelo WhatsApp.
+              fale com o suporte no grupo do Telegram (o link vai no e-mail).
             </p>
           </div>
           <div className="cartao-form">{compraId ? <StatusCompra id={compraId} /> : <FormCompra />}</div>

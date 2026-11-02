@@ -12,5 +12,7 @@ export function obrigatoria(nome: string): string {
 export const config = {
   diasTeste: () => inteiro('TRIAL_BUSINESS_DAYS', 10),
   contato: () => String(process.env.CONTATO_SUPORTE ?? '').trim(),
+  /** Link de convite do grupo de suporte no Telegram (vai nos e-mails do teste e da assinatura). */
+  grupoTelegram: () => String(process.env.TELEGRAM_GRUPO_URL ?? '').trim(),
   siteUrl: () => obrigatoria('SITE_URL').replace(/\/+$/, ''),
 }

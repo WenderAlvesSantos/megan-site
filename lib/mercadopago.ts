@@ -16,17 +16,34 @@ export interface DadosPreferencia {
   compraId: string
   nome: string
   email: string
+  /** Só dígitos, como fica salvo (DDD + número, às vezes com o 55 na frente). */
+  telefone: string
   siteUrl: string
 }
 
-export function montarPreferencia({ compraId, nome, email, siteUrl }: DadosPreferencia) {
+/** Telefone no formato do Mercado Pago (DDD separado); undefined se não for um número brasileiro válido. */
+export function telefoneMP(digitos: string): { area_code: string; number: string } | undefined {
+  const d = digitos.length >= 12 && digitos.startsWith('55') ? digitos.slice(2) : digitos
+  if (d.length !== 10 && d.length !== 11) return undefined
+  return { area_code: d.slice(0, 2), number: d.slice(2) }
+}
+
+export function montarPreferencia({ compraId, nome, email, telefone, siteUrl }: DadosPreferencia) {
   const [primeiro, ...resto] = nome.split(' ')
   const retorno = `${siteUrl}/comprar?compra=${encodeURIComponent(compraId)}`
   return {
     items: [
-      { id: PLANO_ANUAL.id, title: PLANO_ANUAL.titulo, quantity: 1, currency_id: 'BRL', unit_price: PLANO_ANUAL.preco },
+      {
+        id: PLANO_ANUAL.id,
+        title: PLANO_ANUAL.titulo,
+        description: PLANO_ANUAL.descricao,
+        category_id: PLANO_ANUAL.categoria,
+        quantity: 1,
+        currency_id: 'BRL',
+        unit_price: PLANO_ANUAL.preco,
+      },
     ],
-    payer: { name: primeiro, surname: resto.join(' '), email },
+    payer: { name: primeiro, surname: resto.join(' '), email, phone: telefoneMP(telefone) },
     external_reference: compraId,
     // Só Pix (bank_transfer) e cartão de crédito
     payment_methods: {
