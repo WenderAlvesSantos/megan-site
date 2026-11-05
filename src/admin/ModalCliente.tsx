@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
-import { configGerenciadorCliente, detalheCliente, novaChave, reembolsar, type ClienteAdmin } from './apiAdmin'
+import { configGerenciadorCliente, detalheCliente, liberarVitalicio, novaChave, reembolsar, type ClienteAdmin } from './apiAdmin'
 import { data, dataHora, moeda } from './formato'
 import { mascararTelefone } from '../telefone'
 import SeloStatus from './SeloStatus'
@@ -10,6 +10,13 @@ const EVENTOS: Record<string, string> = {
   outra_maquina: 'Tentou em OUTRO computador',
   chave_invalida: 'Digitou chave errada',
   reembolso: 'Compra reembolsada',
+  vitalicio: 'Acesso vitalício liberado',
+}
+
+const CONTA_VITALICIO = {
+  criada: 'conta do trade-manager criada',
+  existente: 'conta do trade-manager já existia (mesma senha)',
+  falhou: 'a conta do trade-manager FALHOU, clique em "Configurar trade-manager" ou crie manualmente',
 }
 
 const RESULTADO_GERENCIADOR = {
@@ -18,7 +25,12 @@ const RESULTADO_GERENCIADOR = {
   sem_conta: 'Este e-mail não tem conta no trade-manager.',
 }
 
-const PLANOS: Record<string, string> = { trial: 'Teste gratuito', anual: 'Licença anual', licenca: 'Licença (sem vencimento)' }
+const PLANOS: Record<string, string> = {
+  trial: 'Teste gratuito',
+  anual: 'Licença anual',
+  vitalicio: 'Vitalício (liberado pelo suporte)',
+  licenca: 'Licença (sem vencimento)',
+}
 
 interface Props {
   senha: string
@@ -79,6 +91,21 @@ export default function ModalCliente({ senha, email, onFechar, onAtualizar }: Pr
       const r = await reembolsar(senha, email)
       const ate = new Date(r.licencaAte).getTime() > Date.now() + 60_000 ? ` Licença do ano anterior segue até ${dataHora(r.licencaAte)}.` : ' Licença encerrada.'
       return `Reembolso feito.${ate} ${r.emailEnviado ? 'Cliente avisado por e-mail.' : 'O e-mail ao cliente FALHOU — avise manualmente.'}`
+    })
+  }
+
+  const vitalicio = () => {
+    if (
+      !window.confirm(
+        `Liberar acesso VITALÍCIO de ${email} à Megan e ao trade-manager, sem pagamento?\n\n` +
+          'O acesso não vence e fica sem limite de contratos. O cliente recebe um e-mail com o instalador, a chave (se ainda não tiver) e o acesso ao trade-manager.',
+      )
+    )
+      return
+    executar(async () => {
+      const r = await liberarVitalicio(senha, email)
+      const chave = r.chave ? `Chave nova: ${r.chave}. ` : 'Chave atual mantida. '
+      return `Acesso vitalício liberado. ${chave}${CONTA_VITALICIO[r.gerenciador]}. ${r.emailEnviado ? 'Cliente avisado por e-mail.' : 'O e-mail FALHOU, avise manualmente.'}`
     })
   }
 
@@ -196,6 +223,11 @@ export default function ModalCliente({ senha, email, onFechar, onAtualizar }: Pr
               title={c.compra.podeReembolsar ? 'Estorna o pagamento e encerra a licença deste ano' : 'Prazo de 7 dias encerrado — sem reembolso'}
             >
               Cancelar e reembolsar
+            </button>
+          )}
+          {c && c.status !== 'vitalicio' && (
+            <button type="button" className="btn btn-fantasma btn-pequeno" onClick={vitalicio} disabled={ocupado}>
+              Liberar acesso vitalício
             </button>
           )}
           <button type="button" className="btn btn-fantasma btn-pequeno" onClick={configurar} disabled={!c || ocupado}>

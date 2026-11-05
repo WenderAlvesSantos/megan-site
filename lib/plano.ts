@@ -14,6 +14,9 @@ export const PLANO_ANUAL = {
 /** Planos com vencimento controlado pela API (os demais, como 'licenca', não vencem). */
 export const PLANOS_COM_VENCIMENTO = ['trial', 'anual'] as const
 
+/** Acesso liberado pelo suporte, sem pagamento e sem vencimento (Megan e trade-manager). */
+export const PLANO_VITALICIO = 'vitalicio'
+
 export function ehLicencaSemVencimento(u: UsuarioMegan | null): boolean {
   return !!u && !(PLANOS_COM_VENCIMENTO as readonly string[]).includes(u.plan || 'licenca')
 }

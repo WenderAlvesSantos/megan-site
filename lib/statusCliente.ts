@@ -1,7 +1,8 @@
 import type { Filter } from 'mongodb'
 import type { UsuarioMegan } from './mongo.js'
+import { PLANO_VITALICIO } from './plano.js'
 
-export const STATUS_CLIENTE = ['teste', 'assinante', 'teste_vencido', 'assinatura_vencida', 'licenca', 'desativado'] as const
+export const STATUS_CLIENTE = ['teste', 'assinante', 'teste_vencido', 'assinatura_vencida', 'vitalicio', 'licenca', 'desativado'] as const
 export type StatusCliente = (typeof STATUS_CLIENTE)[number]
 
 const vigente = (d: Date | undefined, agora: Date) => !!d && new Date(d).getTime() > agora.getTime()
@@ -11,6 +12,7 @@ export function statusCliente(u: UsuarioMegan, agora: Date): StatusCliente {
   if (!u.active) return 'desativado'
   if (u.plan === 'trial') return vigente(u.trialEndsAt, agora) ? 'teste' : 'teste_vencido'
   if (u.plan === 'anual') return vigente(u.licenseEndsAt, agora) ? 'assinante' : 'assinatura_vencida'
+  if (u.plan === PLANO_VITALICIO) return 'vitalicio'
   return 'licenca'
 }
 
@@ -32,7 +34,9 @@ export function filtroStatus(status: StatusCliente, agora: Date): Filter<Usuario
       return { ...ativo, plan: 'anual', licenseEndsAt: { $gt: agora } }
     case 'assinatura_vencida':
       return { ...ativo, plan: 'anual', $or: [{ licenseEndsAt: { $lte: agora } }, { licenseEndsAt: { $exists: false } }] }
+    case 'vitalicio':
+      return { ...ativo, plan: PLANO_VITALICIO }
     case 'licenca':
-      return { ...ativo, plan: { $nin: ['trial', 'anual'] } }
+      return { ...ativo, plan: { $nin: ['trial', 'anual', PLANO_VITALICIO] } }
   }
 }

@@ -10,9 +10,14 @@ import {
 import { dadosPainel, depsConfigGerenciador, detalheCliente, listarClientes } from '../lib/adminDados.js'
 import { depsReembolsoReais } from '../lib/compraDeps.js'
 import { reembolsarCompra } from '../lib/reembolso.js'
+import { camposNovaChave } from '../lib/ativacao.js'
 import { enviarEmailChave } from '../lib/emailChave.js'
+import { enviarEmailVitalicio } from '../lib/emailVitalicio.js'
+import { criarContaGerenciador } from '../lib/gerenciador.js'
 import { colecaoUsuarios, registrarEvento } from '../lib/mongo.js'
+import { PLANO_VITALICIO } from '../lib/plano.js'
 import { normalizarEmail } from '../lib/validacao.js'
+import { liberarVitalicio, type DepsVitalicio } from '../lib/vitalicio.js'
 
 const esperar = (ms: number) => new Promise((r) => setTimeout(r, ms))
 
@@ -26,6 +31,23 @@ async function deps(): Promise<DepsAdmin> {
     },
     semChave: () => usuarios.find({ licenseKeyHash: { $exists: false }, active: true }).limit(500).toArray(),
     enviarEmailChave,
+    evento: registrarEvento,
+  }
+}
+
+async function depsVitalicio(): Promise<DepsVitalicio> {
+  const usuarios = await colecaoUsuarios()
+  return {
+    agora: () => new Date(),
+    buscarUsuario: (email) => usuarios.findOne({ email }),
+    liberar: async (email, chave, agora) => {
+      await usuarios.updateOne(
+        { email },
+        { $set: { plan: PLANO_VITALICIO, active: true, contract: 0, updatedAt: agora, ...(chave ? camposNovaChave(chave, agora) : {}) } },
+      )
+    },
+    criarContaGerenciador,
+    enviarEmail: enviarEmailVitalicio,
     evento: registrarEvento,
   }
 }
@@ -59,6 +81,11 @@ async function responderPost(req: VercelRequest, res: VercelResponse) {
     case 'config-gerenciador':
       res.status(200).json(await aplicarConfigGerenciador(await depsConfigGerenciador()))
       return
+    case 'vitalicio': {
+      const r = await liberarVitalicio(email, await depsVitalicio())
+      res.status(r.ok ? 200 : 409).json(r)
+      return
+    }
     case 'reembolsar': {
       const r = await reembolsarCompra(email, await depsReembolsoReais())
       res.status(r.ok ? 200 : 409).json(r)

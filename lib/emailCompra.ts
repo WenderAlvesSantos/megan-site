@@ -1,5 +1,13 @@
 import { config, obrigatoria } from './config.js'
-import { blocoChave, blocoGerenciador, blocoTelegram, enviarEmail, escapar, formatarVencimento } from './email.js'
+import {
+  blocoChave,
+  blocoGerenciador,
+  blocoTelegram,
+  enviarEmail,
+  escapar,
+  formatarVencimento,
+  PASSO_INSTALAR,
+} from './email.js'
 import type { ContaGerenciador } from './gerenciador.js'
 import { PRAZO_ARREPENDIMENTO_DIAS } from './reembolso.js'
 
@@ -33,11 +41,11 @@ export function montarEmailCompra({ para, nome, licencaAte, conta, chave }: Emai
     `Pagamento confirmado. Sua licença anual da Megan N18 vale até ${ate} (horário de Brasília).`,
     'Sem limite de contratos.',
     '',
-    `1. Baixe o MeganN18.zip: ${link}`,
-    '2. Extraia a pasta inteira (não abra o .exe de dentro do .zip).',
-    `3. Abra o MeganN18.exe e entre com este e-mail (${para}) e a chave de ativação.`,
+    `1. Baixe o instalador MeganN18-Setup.exe: ${link}`,
+    `2. ${PASSO_INSTALAR}`,
+    `3. Abra a Megan N18 pelo atalho da Área de Trabalho e entre com este e-mail (${para}) e a chave de ativação.`,
     '',
-    'Se você já usa a Megan, basta abrir o programa: a licença é atualizada sozinha.',
+    'Se você já usa a Megan, não precisa instalar de novo: basta abrir o programa, a licença é atualizada sozinha.',
     '',
     ...ativacao.texto,
     '',
@@ -55,14 +63,14 @@ export function montarEmailCompra({ para, nome, licencaAte, conta, chave }: Emai
     <p>Olá, ${escapar(primeiro)}!</p>
     <p>Pagamento confirmado. Você pode usar a Megan N18 até <b>${escapar(ate)}</b> (horário de Brasília), sem limite de contratos.</p>
     <p style="margin:24px 0">
-      <a href="${escapar(link)}" style="background:#0ea5e9;color:#fff;padding:12px 20px;border-radius:8px;text-decoration:none;font-weight:bold">Baixar MeganN18.zip</a>
+      <a href="${escapar(link)}" style="background:#0ea5e9;color:#fff;padding:12px 20px;border-radius:8px;text-decoration:none;font-weight:bold">Baixar o instalador da Megan N18</a>
     </p>
     <ol>
-      <li>Extraia a pasta inteira (não abra o .exe de dentro do .zip).</li>
-      <li>Abra o <b>MeganN18.exe</b> e entre com este e-mail (<b>${escapar(para)}</b>) e a chave de ativação.</li>
+      <li>${escapar(PASSO_INSTALAR)}</li>
+      <li>Abra a <b>Megan N18</b> pelo atalho da Área de Trabalho e entre com este e-mail (<b>${escapar(para)}</b>) e a chave de ativação.</li>
       <li>Deixe o MetaTrader 5 aberto, logado na sua corretora e com Algo Trading ligado.</li>
     </ol>
-    <p>Se você já usa a Megan, basta abrir o programa: a licença é atualizada sozinha.</p>
+    <p>Se você já usa a Megan, não precisa instalar de novo: basta abrir o programa, a licença é atualizada sozinha.</p>
     ${ativacao.html}
     ${gerenciador.html}
     ${grupo.html}

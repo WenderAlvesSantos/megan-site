@@ -30,8 +30,8 @@ export default function Confirmacao({ resultado, onVoltar }: Props) {
       {criado && (
         <ol className="passos-curtos">
           <li>Abra o e-mail que enviamos (confira também o spam).</li>
-          <li>Baixe o MeganN18.zip e extraia a pasta inteira.</li>
-          <li>Abra o MeganN18.exe e entre com o e-mail cadastrado.</li>
+          <li>Baixe o instalador da Megan N18 e execute (o padrão é instalar em Arquivos de Programas).</li>
+          <li>Abra a Megan N18 pelo atalho da Área de Trabalho e entre com o e-mail cadastrado.</li>
           <li>No mesmo e-mail estão o link e a senha do Megan Trade Manager, seu gerenciamento de risco.</li>
         </ol>
       )}

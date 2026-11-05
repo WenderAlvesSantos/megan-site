@@ -22,6 +22,10 @@ export function formatarVencimento(d: Date): string {
   })
 }
 
+/** Passo de instalação comum aos e-mails do teste e da compra. */
+export const PASSO_INSTALAR =
+  'Execute o instalador e escolha a pasta (o padrão é Arquivos de Programas). Se o Windows mostrar "O Windows protegeu o computador", clique em "Mais informações" e depois em "Executar assim mesmo".'
+
 export function escapar(texto: string): string {
   const mapa: Record<string, string> = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }
   return texto.replace(/[&<>"']/g, (c) => mapa[c])
@@ -92,9 +96,9 @@ export function montarEmailTeste({ nome, venceEm, para, conta, chave }: EmailTes
     '',
     `Seu teste da Megan N18 está liberado até ${vence} (horário de Brasília).`,
     '',
-    `1. Baixe o MeganN18.zip: ${link}`,
-    '2. Extraia a pasta inteira (não abra o .exe de dentro do .zip).',
-    `3. Abra o MeganN18.exe e entre com este e-mail (${para}) e a chave de ativação abaixo.`,
+    `1. Baixe o instalador MeganN18-Setup.exe: ${link}`,
+    `2. ${PASSO_INSTALAR}`,
+    `3. Abra a Megan N18 pelo atalho da Área de Trabalho e entre com este e-mail (${para}) e a chave de ativação abaixo.`,
     '',
     ...ativacao.texto,
     '',
@@ -113,11 +117,11 @@ export function montarEmailTeste({ nome, venceEm, para, conta, chave }: EmailTes
     <p>Olá, ${escapar(primeiro)}!</p>
     <p>Você pode usar a Megan N18 até <b>${escapar(vence)}</b> (horário de Brasília).</p>
     <p style="margin:24px 0">
-      <a href="${escapar(link)}" style="background:#0ea5e9;color:#fff;padding:12px 20px;border-radius:8px;text-decoration:none;font-weight:bold">Baixar MeganN18.zip</a>
+      <a href="${escapar(link)}" style="background:#0ea5e9;color:#fff;padding:12px 20px;border-radius:8px;text-decoration:none;font-weight:bold">Baixar o instalador da Megan N18</a>
     </p>
     <ol>
-      <li>Extraia a pasta inteira (não abra o .exe de dentro do .zip).</li>
-      <li>Abra o <b>MeganN18.exe</b> e entre com este e-mail (<b>${escapar(para)}</b>) e a chave de ativação abaixo.</li>
+      <li>${escapar(PASSO_INSTALAR)}</li>
+      <li>Abra a <b>Megan N18</b> pelo atalho da Área de Trabalho e entre com este e-mail (<b>${escapar(para)}</b>) e a chave de ativação abaixo.</li>
       <li>Deixe o MetaTrader 5 aberto, logado na sua corretora e com Algo Trading ligado.</li>
     </ol>
     ${ativacao.html}

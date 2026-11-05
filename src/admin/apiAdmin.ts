@@ -1,4 +1,4 @@
-export type StatusCliente = 'teste' | 'assinante' | 'teste_vencido' | 'assinatura_vencida' | 'licenca' | 'desativado'
+export type StatusCliente = 'teste' | 'assinante' | 'teste_vencido' | 'assinatura_vencida' | 'vitalicio' | 'licenca' | 'desativado'
 export type Agrupamento = 'dia' | 'semana' | 'mes'
 
 export interface ClienteLinha {
@@ -100,6 +100,12 @@ export const novaChave = (senha: string, email: string) =>
 
 export const reembolsar = (senha: string, email: string) =>
   acao<{ ok: true; licencaAte: string; emailEnviado: boolean }>(senha, { acao: 'reembolsar', email })
+
+export const liberarVitalicio = (senha: string, email: string) =>
+  acao<{ ok: true; chave: string | null; gerenciador: 'criada' | 'existente' | 'falhou'; emailEnviado: boolean }>(senha, {
+    acao: 'vitalicio',
+    email,
+  })
 
 export const configGerenciadorCliente = (senha: string, email: string) =>
   acao<{ status: 'aplicado' | 'ja_tinha' | 'sem_conta' }>(senha, { acao: 'config-gerenciador-cliente', email })

@@ -5,6 +5,7 @@ export const STATUS: Record<StatusCliente, { rotulo: string; cor: string }> = {
   assinante: { rotulo: 'Assinante', cor: '#34d399' },
   teste_vencido: { rotulo: 'Teste vencido', cor: '#fbbf24' },
   assinatura_vencida: { rotulo: 'Assinatura vencida', cor: '#f87171' },
+  vitalicio: { rotulo: 'Vitalício', cor: '#f472b6' },
   licenca: { rotulo: 'Licença antiga', cor: '#a78bfa' },
   desativado: { rotulo: 'Desativado', cor: '#64748b' },
 }

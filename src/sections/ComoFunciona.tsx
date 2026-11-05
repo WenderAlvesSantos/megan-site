@@ -6,9 +6,9 @@ const PASSOS = [
     texto: `Preencha nome, e-mail e celular. O teste de ${DIAS_TESTE} dias úteis é liberado na hora, sem cartão.`,
   },
   {
-    titulo: 'Baixe e abra',
+    titulo: 'Instale e abra',
     texto:
-      'Você recebe no e-mail o link da Megan N18 e o login do Megan Trade Manager. É só extrair a pasta e abrir — não precisa instalar nada.',
+      'Você recebe no e-mail o instalador da Megan N18 e o login do Megan Trade Manager. Instale em poucos cliques e abra pelo atalho na Área de Trabalho.',
   },
   {
     titulo: 'Conecte e acompanhe',
