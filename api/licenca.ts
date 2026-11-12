@@ -1,4 +1,5 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node'
+import { infoAtualizacao } from '../lib/appAtualizacao.js'
 import { assinar } from '../lib/assinatura.js'
 import { config } from '../lib/config.js'
 import { colecaoUsuarios, registrarEvento } from '../lib/mongo.js'
@@ -40,7 +41,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       evento: registrarEvento,
     })
     const emitidoEm = new Date().toISOString()
-    res.status(200).json(assinar({ ...resultado, email, nonce, maquina, app: String(corpo.app ?? ''), emitidoEm }))
+    res.status(200).json(
+      assinar({ ...resultado, email, nonce, maquina, app: String(corpo.app ?? ''), emitidoEm, ...infoAtualizacao() }),
+    )
   } catch (e) {
     console.error('[licenca] erro', e)
     res.status(503).json({ erro: 'Servidor de licença indisponível. Tente de novo em instantes.' })
