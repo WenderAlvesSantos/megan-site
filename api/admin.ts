@@ -14,6 +14,7 @@ import { camposNovaChave } from '../lib/ativacao.js'
 import { enviarEmailChave } from '../lib/emailChave.js'
 import { enviarEmailVitalicio } from '../lib/emailVitalicio.js'
 import { criarContaGerenciador } from '../lib/gerenciador.js'
+import { gravarAtualizacao } from '../lib/appAtualizacao.js'
 import { colecaoUsuarios, registrarEvento } from '../lib/mongo.js'
 import { PLANO_VITALICIO } from '../lib/plano.js'
 import { normalizarEmail } from '../lib/validacao.js'
@@ -89,6 +90,16 @@ async function responderPost(req: VercelRequest, res: VercelResponse) {
     case 'reembolsar': {
       const r = await reembolsarCompra(email, await depsReembolsoReais())
       res.status(r.ok ? 200 : 409).json(r)
+      return
+    }
+    case 'publicar-n18': {
+      const corpoN18 = req.body as { versao?: string; url?: string; notas?: string }
+      try {
+        const info = await gravarAtualizacao(String(corpoN18.versao || ''), String(corpoN18.url || ''), String(corpoN18.notas || ''))
+        res.status(200).json({ ok: true, ...info })
+      } catch (e) {
+        res.status(400).json({ erro: e instanceof Error ? e.message : 'Falha ao publicar.' })
+      }
       return
     }
     case 'config-gerenciador-cliente':

@@ -80,6 +80,18 @@ export async function colecaoEventos(): Promise<Collection<EventoLicenca>> {
   return (await banco()).collection<EventoLicenca>('license_events')
 }
 
+export interface ConfigN18 {
+  _id: 'n18'
+  versao: string
+  url: string
+  notas?: string
+  publicadoEm: Date
+}
+
+export async function colecaoConfig(): Promise<Collection<ConfigN18>> {
+  return (await banco()).collection<ConfigN18>('config')
+}
+
 /** Grava o histórico da licença sem nunca derrubar a resposta principal. */
 export async function registrarEvento(e: Omit<EventoLicenca, 'em'>): Promise<void> {
   try {

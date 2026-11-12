@@ -1,5 +1,5 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node'
-import { infoAtualizacao } from '../lib/appAtualizacao.js'
+import { lerAtualizacao } from '../lib/appAtualizacao.js'
 import { assinar } from '../lib/assinatura.js'
 import { config } from '../lib/config.js'
 import { colecaoUsuarios, registrarEvento } from '../lib/mongo.js'
@@ -41,8 +41,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       evento: registrarEvento,
     })
     const emitidoEm = new Date().toISOString()
+    const atualizacao = await lerAtualizacao()
     res.status(200).json(
-      assinar({ ...resultado, email, nonce, maquina, app: String(corpo.app ?? ''), emitidoEm, ...infoAtualizacao() }),
+      assinar({ ...resultado, email, nonce, maquina, app: String(corpo.app ?? ''), emitidoEm, ...atualizacao }),
     )
   } catch (e) {
     console.error('[licenca] erro', e)
