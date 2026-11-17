@@ -28,6 +28,13 @@ export function ehPregao(dia: Date): boolean {
  * Fim do teste: 18:30 (Brasília) do N-ésimo pregão. O dia do cadastro conta
  * quando é pregão e o cadastro acontece antes do fechamento.
  */
+/** Renovação soma N pregões ao vencimento ainda vigente; senão conta a partir de agora. */
+export function novaValidadeTeste(trialEndsAt: Date | undefined, agora: Date, diasUteis: number): Date {
+  const atual = trialEndsAt ? new Date(trialEndsAt) : null
+  const base = atual && atual.getTime() > agora.getTime() ? atual : agora
+  return fimDoTeste(base, diasUteis)
+}
+
 export function fimDoTeste(inicio: Date, diasUteis: number): Date {
   let dia = diaBrasilia(inicio)
   const local = new Date(inicio.getTime() + OFFSET_BRASILIA_MS)

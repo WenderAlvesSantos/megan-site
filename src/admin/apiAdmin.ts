@@ -107,6 +107,12 @@ export const liberarVitalicio = (senha: string, email: string) =>
     email,
   })
 
+export const renovarTeste = (senha: string, email: string) =>
+  acao<{ ok: true; venceEm: string; chave: string | null; emailEnviado: boolean }>(senha, {
+    acao: 'renovar-teste',
+    email,
+  })
+
 export const configGerenciadorCliente = (senha: string, email: string) =>
   acao<{ status: 'aplicado' | 'ja_tinha' | 'sem_conta' }>(senha, { acao: 'config-gerenciador-cliente', email })
 

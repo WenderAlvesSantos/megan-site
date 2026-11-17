@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
-import { configGerenciadorCliente, detalheCliente, liberarVitalicio, novaChave, reembolsar, type ClienteAdmin } from './apiAdmin'
+import { configGerenciadorCliente, detalheCliente, liberarVitalicio, novaChave, reembolsar, renovarTeste, type ClienteAdmin } from './apiAdmin'
 import { data, dataHora, moeda } from './formato'
+import { DIAS_TESTE } from '../oferta'
 import { mascararTelefone } from '../telefone'
 import SeloStatus from './SeloStatus'
 
@@ -11,6 +12,7 @@ const EVENTOS: Record<string, string> = {
   chave_invalida: 'Digitou chave errada',
   reembolso: 'Compra reembolsada',
   vitalicio: 'Acesso vitalício liberado',
+  teste_renovado: 'Teste gratuito renovado',
 }
 
 const CONTA_VITALICIO = {
@@ -91,6 +93,23 @@ export default function ModalCliente({ senha, email, onFechar, onAtualizar }: Pr
       const r = await reembolsar(senha, email)
       const ate = new Date(r.licencaAte).getTime() > Date.now() + 60_000 ? ` Licença do ano anterior segue até ${dataHora(r.licencaAte)}.` : ' Licença encerrada.'
       return `Reembolso feito.${ate} ${r.emailEnviado ? 'Cliente avisado por e-mail.' : 'O e-mail ao cliente FALHOU — avise manualmente.'}`
+    })
+  }
+
+  const renovar = () => {
+    if (
+      !window.confirm(
+        `Renovar ${DIAS_TESTE} dias úteis de teste gratuito para ${email}?\n\n` +
+          'Se o teste ainda estiver válido, os dias entram depois do vencimento atual. ' +
+          'A chave e o computador não mudam. O cliente recebe um e-mail com a nova data.',
+      )
+    )
+      return
+    executar(async () => {
+      const r = await renovarTeste(senha, email)
+      const ate = dataHora(r.venceEm)
+      const chave = r.chave ? ` Chave nova: ${r.chave}.` : ''
+      return `Teste renovado até ${ate}.${chave} ${r.emailEnviado ? 'Cliente avisado por e-mail.' : 'O e-mail FALHOU, avise manualmente.'}`
     })
   }
 
@@ -223,6 +242,11 @@ export default function ModalCliente({ senha, email, onFechar, onAtualizar }: Pr
               title={c.compra.podeReembolsar ? 'Estorna o pagamento e encerra a licença deste ano' : 'Prazo de 7 dias encerrado — sem reembolso'}
             >
               Cancelar e reembolsar
+            </button>
+          )}
+          {c && (c.plano === 'trial' || c.status === 'teste' || c.status === 'teste_vencido') && (
+            <button type="button" className="btn btn-fantasma btn-pequeno" onClick={renovar} disabled={ocupado}>
+              Renovar teste gratuito
             </button>
           )}
           {c && c.status !== 'vitalicio' && (

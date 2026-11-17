@@ -29,7 +29,7 @@ export interface UsuarioMegan {
 
 export interface EventoLicenca {
   email: string
-  tipo: 'chave_gerada' | 'ativada' | 'outra_maquina' | 'chave_invalida' | 'reembolso' | 'vitalicio'
+  tipo: 'chave_gerada' | 'ativada' | 'outra_maquina' | 'chave_invalida' | 'reembolso' | 'vitalicio' | 'teste_renovado'
   em: Date
   maquina?: string
   detalhe?: string

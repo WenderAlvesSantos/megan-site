@@ -17,6 +17,9 @@ import { criarContaGerenciador } from '../lib/gerenciador.js'
 import { gravarAtualizacao } from '../lib/appAtualizacao.js'
 import { colecaoUsuarios, registrarEvento } from '../lib/mongo.js'
 import { PLANO_VITALICIO } from '../lib/plano.js'
+import { camposRenovacaoTeste, renovarTeste, type DepsRenovarTeste } from '../lib/renovarTeste.js'
+import { enviarEmailTesteRenovado } from '../lib/emailRenovacaoTeste.js'
+import { config } from '../lib/config.js'
 import { normalizarEmail } from '../lib/validacao.js'
 import { liberarVitalicio, type DepsVitalicio } from '../lib/vitalicio.js'
 
@@ -32,6 +35,20 @@ async function deps(): Promise<DepsAdmin> {
     },
     semChave: () => usuarios.find({ licenseKeyHash: { $exists: false }, active: true }).limit(500).toArray(),
     enviarEmailChave,
+    evento: registrarEvento,
+  }
+}
+
+async function depsRenovarTeste(): Promise<DepsRenovarTeste> {
+  const usuarios = await colecaoUsuarios()
+  return {
+    agora: () => new Date(),
+    diasTeste: config.diasTeste(),
+    buscarUsuario: (email) => usuarios.findOne({ email }),
+    renovar: async (email, venceEm, chave, agora) => {
+      await usuarios.updateOne({ email }, { $set: camposRenovacaoTeste(venceEm, chave, agora) })
+    },
+    enviarEmail: enviarEmailTesteRenovado,
     evento: registrarEvento,
   }
 }
@@ -84,6 +101,11 @@ async function responderPost(req: VercelRequest, res: VercelResponse) {
       return
     case 'vitalicio': {
       const r = await liberarVitalicio(email, await depsVitalicio())
+      res.status(r.ok ? 200 : 409).json(r)
+      return
+    }
+    case 'renovar-teste': {
+      const r = await renovarTeste(email, await depsRenovarTeste())
       res.status(r.ok ? 200 : 409).json(r)
       return
     }

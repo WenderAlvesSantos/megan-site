@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { ehPregao, fimDoTeste } from '../lib/diasUteis.js'
+import { ehPregao, fimDoTeste, novaValidadeTeste } from '../lib/diasUteis.js'
 
 const brt = (iso: string) => new Date(`${iso}-03:00`)
 
@@ -25,6 +25,12 @@ describe('fimDoTeste', () => {
 
   it('1 dia útil no próprio pregão vence às 18:30 do mesmo dia', () => {
     expect(fimDoTeste(brt('2026-10-29T09:00:00'), 1).toISOString()).toBe('2026-10-29T21:30:00.000Z')
+  })
+
+  it('renovação com teste vigente começa no pregão seguinte ao vencimento', () => {
+    expect(novaValidadeTeste(brt('2026-11-12T18:30:00'), brt('2026-10-29T12:00:00'), 10).toISOString()).toBe(
+      '2026-11-27T21:30:00.000Z',
+    )
   })
 })
 
